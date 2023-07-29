@@ -25,7 +25,7 @@ const userModel = (sequelize, DataTypes) => {
     token: {
       type: DataTypes.VIRTUAL,
       get() {
-        return jwt.sign({ username: this.username }, SECRET);
+        return jwt.sign({ username: this.username , id: this.id }, SECRET);
       },
       set(tokenObj) {
         let token = jwt.sign(tokenObj, SECRET);
@@ -69,6 +69,12 @@ const userModel = (sequelize, DataTypes) => {
       throw new Error(e.message)
     }
   };
+
+  model.getId = async function (token) {
+    const parsedToken = jwt.verify(token, SECRET);
+    const user = this.findOne({where: { username: parsedToken.username } });
+    if (user) { return user.id; }
+  }
 
   return model;
 }

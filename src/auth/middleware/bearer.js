@@ -12,6 +12,7 @@ module.exports = async (req, res, next) => {
     const validUser = await userModel.authenticateToken(token);
     req.user = validUser;
     req.token = validUser.token;
+    // console.log("validUser ====>", validUser.dataValues)
     next();
   } catch (e) {
     _authError();

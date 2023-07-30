@@ -7,6 +7,10 @@ const userModel = require("../../src/auth/models/users.js");
 const JobsModel = require("./jobs/model");
 const jobComments = require("./jobcomments/model.js");
 const likesModel= require('./likes/model.js')
+const {
+  friendRequestsModel,
+} = require("./friendrequests/FriendRequest.model.js");
+
 const POSTGRESS_URI =
   process.env.NODE_ENV === "test"
     ? "sqlite::memory:"
@@ -38,6 +42,7 @@ like.belongsTo(user,{foreignKey:"user_id"})
 posts.hasMany(like,{foreignKey:"post_id"});
 like.belongsTo(posts,{foreignKey:"post_id"})
 
+const friendRequests = friendRequestsModel(sequelize, DataTypes);
 
 user.hasMany(posts, { foreignKey: "user_id" });
 posts.belongsTo(user, { foreignKey: "user_id" });
@@ -48,11 +53,27 @@ jobcomments.belongsTo(jobs, { foreignKey: "job_id" });
 posts.hasMany(comment, { foreignKey: "post_id" });
 comment.belongsTo(posts, { foreignKey: "post_id" });
 
-
 user.hasMany(jobs, { foreignKey: "user_id" });
 jobs.belongsTo(user, { foreignKey: "user_id" });
+//------------------------------------
+//----------- friend requests mohannad
+friendRequests.belongsTo(user, { foreignKey: "sender_id", as: "sender" });
+user.hasMany(friendRequests, {
+  foreignKey: "sender_id",
+  as: "sentFriendRequests",
+});
 
+friendRequests.belongsTo(user, {
+  foreignKey: "receiver_id",
+  as: "receiver",
+});
+user.hasMany(friendRequests, {
+  foreignKey: "receiver_id",
+  as: "receivedFriendRequests",
+});
 
+//----------- friend requests mohannad
+//------------------------------------
 
 module.exports = {
   db: sequelize,
@@ -62,5 +83,6 @@ module.exports = {
   jobcomments: new Collection(jobcomments),
   jobs: new Collection(jobs),
   userModel: user,
-  likes: new Collection(like)
+  likes: new Collection(like),
+  friendRequests: friendRequests
 };

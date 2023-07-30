@@ -14,4 +14,3 @@ const commentsModel = (sequelize, DataTypes) =>
   });
 
 module.exports = commentsModel;
-

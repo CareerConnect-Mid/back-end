@@ -84,9 +84,9 @@ async function viewFriendRequests(req, res) {
 }
 /*------------------*/
 
-router.post("/handle-friend-request/:id", bearerAuth, handleFriendRequest);
+// router.post("/handle-friend-request/:id", bearerAuth, handleFriendRequest);
 
-async function handleFriendRequest(req, res) {}
+// async function handleFriendRequest(req, res) {}
 
 //------------------------friend requests routes mohannad
 //------------------------------------------------------

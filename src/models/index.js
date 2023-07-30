@@ -6,7 +6,7 @@ const commentsModel = require("./comments/model.js");
 const userModel = require("../../src/auth/models/users.js");
 const JobsModel = require("./jobs/model");
 const jobComments = require("./jobcomments/model.js");
-
+const likesModel= require('./likes/model.js')
 const POSTGRESS_URI =
   process.env.NODE_ENV === "test"
     ? "sqlite::memory:"
@@ -30,6 +30,14 @@ const jobcomments = jobComments(sequelize, DataTypes);
 const comment = commentsModel(sequelize, DataTypes);
 const jobs = JobsModel(sequelize, DataTypes);
 const user=userModel(sequelize,DataTypes)
+const like=likesModel(sequelize,DataTypes)
+
+user.hasMany(like,{foreignKey:"user_id"});
+like.belongsTo(user,{foreignKey:"user_id"})
+
+posts.hasMany(like,{foreignKey:"post_id"});
+like.belongsTo(posts,{foreignKey:"post_id"})
+
 
 user.hasMany(posts, { foreignKey: "user_id" });
 posts.belongsTo(user, { foreignKey: "user_id" });
@@ -54,4 +62,5 @@ module.exports = {
   jobcomments: new Collection(jobcomments),
   jobs: new Collection(jobs),
   userModel: user,
+  likes: new Collection(like)
 };

@@ -4,7 +4,8 @@ const express = require("express");
 const dataModules = require("../models");
 const bearerAuth = require("../auth/middleware/bearer");
 const permissions = require("../auth/middleware/acl");
-const checkId = require("../auth/middleware/checkId");
+const checkId = require("../auth/middleware/checkId")
+
 const {
   user,
   users,
@@ -13,6 +14,7 @@ const {
   jobs,
   comments,
   friendRequests,
+  likes
 } = require("../models/index");
 
 const router = express.Router();
@@ -104,34 +106,15 @@ router.param("model", (req, res, next) => {
 router.get("/:model", bearerAuth, permissions("read"), handleGetAll);
 router.get("/:model/:id", bearerAuth, permissions("read"), handleGetOne);
 router.post("/:model", bearerAuth, permissions("create"), handleCreate);
-router.put(
-  "/:model/:id",
-  bearerAuth,
-  checkId,
-  permissions("update"),
-  handleUpdate
-);
-router.delete(
-  "/:model/:id",
-  bearerAuth,
-  checkId,
-  permissions("delete"),
-  handleDelete
-);
-router.get(
-  "/jobs/:id/jobcomments",
-  bearerAuth,
-  permissions("read"),
-  jobComments
-);
-router.get(
-  "/posts/:id/comments",
-  bearerAuth,
-  permissions("read"),
-  postComments
-);
-router.get("/jobs/:id/jobcomments", bearerAuth, jobComments);
-router.get("/posts/:id/comments", bearerAuth, postComments);
+router.post("/:model", bearerAuth, permissions("create"), handleCreateLikes);
+router.put("/:model/:id", bearerAuth, checkId, permissions("update"), handleUpdate);
+router.delete("/:model/:id", bearerAuth, checkId, permissions("delete"), handleDelete);
+
+
+
+router.get('/jobs/:id/jobcomments',bearerAuth, jobComments);
+router.get('/posts/:id/comments',bearerAuth, postComments);
+router.get('/posts/:id/likes',bearerAuth, postLikes);
 
 async function jobComments(req, res) {
   const jobId = parseInt(req.params.id);
@@ -142,6 +125,11 @@ async function postComments(req, res) {
   const postId = parseInt(req.params.id);
   let pcomments = await posts.getUserPosts(postId, comments.model);
   res.status(200).json(pcomments);
+}
+async function postLikes(req, res) {
+  const postId = parseInt(req.params.id);
+  let pLikes = await posts.getUserPosts(postId, likes.model);
+  res.status(200).json(pLikes);
 }
 
 router.get("/users/:id/:model", bearerAuth, permissions("read"), userRecords);
@@ -175,6 +163,11 @@ async function handleGetOne(req, res) {
 }
 
 async function handleCreate(req, res) {
+  let obj = req.body;
+  let newRecord = await req.model.create(obj);
+  res.status(201).json(newRecord);
+}
+async function handleCreateLikes(req, res) {
   let obj = req.body;
   let newRecord = await req.model.create(obj);
   res.status(201).json(newRecord);

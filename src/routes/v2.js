@@ -117,4 +117,10 @@ async function handleDelete(req, res) {
   res.status(200).json(deletedRecord);
 }
 
+//------------------------------------------------------
+//-----------------------friend requests routes mohannad
+
+//------------------------friend requests routes mohannad
+//------------------------------------------------------
+
 module.exports = router;

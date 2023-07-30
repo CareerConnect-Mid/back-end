@@ -10,10 +10,10 @@ const friendRequests = (sequelize, DataTypes) =>
       type: DataTypes.INTEGER,
       allowNull: false,
     },
-    role: {
-      type: DataTypes.ENUM("bending", "accepted", "declined"),
+    status: {
+      type: DataTypes.ENUM("pending", "accepted", "declined"),
       required: true,
-      defaultValue: "bending",
+      defaultValue: "pending",
     },
     message: { type: DataTypes.STRING },
   });

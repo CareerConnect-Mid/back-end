@@ -7,6 +7,7 @@ const userModel = require("../../src/auth/models/users.js");
 const JobsModel = require("./jobs/model");
 const jobComments = require("./jobcomments/model.js");
 const likesModel= require('./likes/model.js')
+const chatModel= require('./chat/model.js')
 const {
   friendRequestsModel,
 } = require("./friendrequests/FriendRequest.model.js");
@@ -35,6 +36,8 @@ const comment = commentsModel(sequelize, DataTypes);
 const jobs = JobsModel(sequelize, DataTypes);
 const user=userModel(sequelize,DataTypes)
 const like=likesModel(sequelize,DataTypes)
+const chat=chatModel(sequelize,DataTypes)
+const friendRequests = friendRequestsModel(sequelize, DataTypes);
 
 user.hasMany(like,{foreignKey:"user_id"});
 like.belongsTo(user,{foreignKey:"user_id"})
@@ -42,7 +45,6 @@ like.belongsTo(user,{foreignKey:"user_id"})
 posts.hasMany(like,{foreignKey:"post_id"});
 like.belongsTo(posts,{foreignKey:"post_id"})
 
-const friendRequests = friendRequestsModel(sequelize, DataTypes);
 
 user.hasMany(posts, { foreignKey: "user_id" });
 posts.belongsTo(user, { foreignKey: "user_id" });
@@ -75,6 +77,28 @@ user.hasMany(friendRequests, {
 //----------- friend requests mohannad
 //------------------------------------
 
+
+//------------------------------------
+//----------- chat aljamal
+chat.belongsTo(user, { foreignKey: "sender_id", as: "sender" });
+user.hasMany(chat, {
+  foreignKey: "sender_id",
+  as: "sentMessage",
+});
+
+chat.belongsTo(user, {
+  foreignKey: "receiver_id",
+  as: "receiver",
+});
+user.hasMany(chat, {
+  foreignKey: "receiver_id",
+  as: "receivedMessage",
+});
+
+//----------- chat aljamal
+//------------------------------------
+
+
 module.exports = {
   db: sequelize,
   posts: new Collection(posts),
@@ -84,5 +108,6 @@ module.exports = {
   jobs: new Collection(jobs),
   userModel: user,
   likes: new Collection(like),
-  friendRequests: friendRequests
+  friendRequests: friendRequests,
+  chat: chat
 };

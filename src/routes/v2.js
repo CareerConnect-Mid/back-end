@@ -84,9 +84,31 @@ async function viewFriendRequests(req, res) {
 }
 /*------------------*/
 
-// router.post("/handle-friend-request/:id", bearerAuth, handleFriendRequest);
+router.post("/handle-friend-request", bearerAuth, handleFriendRequest);
 
-// async function handleFriendRequest(req, res) {}
+async function handleFriendRequest(req, res) {
+  const { senderid, requestid, action } = req.body;
+  const friendRequestid = requestid || senderid;
+  const friendRequest = await friendRequests.findByPk(friendRequestid);
+  if (!friendRequest) {
+    return res.status(404).json({ message: "Friend request not found." });
+  }
+  if (action === "accept") {
+    friendRequest.status = "accepted";
+  } else if (action === "decline") {
+    friendRequest.status = "declined";
+  } else {
+    return res.status(400).json({ message: "Invalid action." });
+  }
+  // Save the updated status in the database
+  await friendRequest.save();
+  console.log(friendRequest);
+  return res
+    .status(200)
+    .json({
+      message: `Friend request is ${friendRequest.status} successfully.`,
+    });
+}
 
 //------------------------friend requests routes mohannad
 //------------------------------------------------------

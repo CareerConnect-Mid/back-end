@@ -1,10 +1,13 @@
 "use strict";
-
+require("dotenv").config();
 const express = require("express");
 const dataModules = require("../models");
 const bearerAuth = require("../auth/middleware/bearer");
 const permissions = require("../auth/middleware/acl");
 const checkId = require("../auth/middleware/checkId");
+const jwt = require("jsonwebtoken");
+const SECRET = process.env.SECRET || "secretstring";
+const port = process.env.PORT || 3001;
 const {Sequelize} = require('sequelize');
 
 const {
@@ -16,10 +19,21 @@ const {
   comments,
   friendRequests,
   likes,
+  notification,
+  notificationModel,
+  // notification2,
   chat
 } = require("../models/index");
 
 const router = express.Router();
+////////////////////////////// Notification model
+router.get(
+  "/usernotification",
+  bearerAuth,
+  permissions("read"),
+  userNotifications
+);
+///////////////////////////// Notification model
 
 //------------------------------------------------------
 //-----------------------friend requests routes mohannad
@@ -185,14 +199,41 @@ router.get("/:model", bearerAuth, permissions("read"), handleGetAll);
 router.get("/:model/:id", bearerAuth, permissions("read"), handleGetOne);
 router.post("/:model", bearerAuth, permissions("create"), handleCreate);
 router.post("/:model", bearerAuth, permissions("create"), handleCreateLikes);
-router.put("/:model/:id", bearerAuth, checkId, permissions("update"), handleUpdate);
-router.delete("/:model/:id", bearerAuth, checkId, permissions("delete"), handleDelete);
+router.put(
+  "/:model/:id",
+  bearerAuth,
+  checkId,
+  permissions("update"),
+  handleUpdate
+);
+router.delete(
+  "/:model/:id",
+  bearerAuth,
+  checkId,
+  permissions("delete"),
+  handleDelete
+);
 
+router.get("/jobs/:id/jobcomments", bearerAuth, jobComments);
+router.get("/posts/:id/comments", bearerAuth, postComments);
+router.get("/posts/:id/likes", bearerAuth, postLikes);
 
+//////////////////////////////////////// Notification Model
+async function userNotifications(req, res) {
+  const token = req.headers.authorization.split(" ").pop();
 
-router.get('/jobs/:id/jobcomments',bearerAuth, jobComments);
-router.get('/posts/:id/comments',bearerAuth, postComments);
-router.get('/posts/:id/likes',bearerAuth, postLikes);
+  const parsedToken = jwt.verify(token, SECRET);
+
+  let notifications = await notificationModel.findAll({
+    where: {
+      receiver_id: parsedToken.id,
+    },
+  });
+
+  res.status(200).json(notifications);
+}
+
+//////////////////////////////////////// Notification Model
 
 async function jobComments(req, res) {
   const jobId = parseInt(req.params.id);

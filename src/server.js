@@ -1,5 +1,7 @@
 "use strict";
-// 3rd Party Resources
+
+require("dotenv").config();
+const port = process.env.PORT || 3001;
 const express = require("express");
 const app = express();
 const cors = require("cors");
@@ -8,10 +10,20 @@ const authRoutes = require("./auth/routes");
 const v2Routes = require("./routes/v2.js");
 const notFoundHandler = require("./error-handlers/404.js");
 const errorHandler = require("./error-handlers/500.js");
-// const logger = require("./middleware/logger.js");
 const v1Routes = require("./routes/v1.js");
+const http = require('http');
+const { Server } = require("socket.io");
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+      origin: `http://localhost:${process.env.PORT}/`,
+      methods: ["GET", "POST"]
+  }
+});
+
+//--------------------------
 app.use(express.json());
-// app.use(logger);
 app.use("/api/v1", v1Routes);
 app.use("/api/v2", v2Routes);
 app.use(authRoutes);
@@ -26,9 +38,9 @@ app.use(morgan("dev"));
 app.use(express.urlencoded({ extended: true }));
 
 module.exports = {
-  server: app,
+  // server: app,
   start: (port) => {
-    app.listen(port, () => {
+    server.listen(port, () => {
       console.log(`Server Up on ${port}`);
     });
   },

@@ -10,7 +10,7 @@ const userModel = (sequelize, DataTypes) => {
     username: { type: DataTypes.STRING, required: true, unique: true },
     password: { type: DataTypes.STRING, required: true },
     role: {
-      type: DataTypes.ENUM("user", "writer", "editor", "admin"),
+      type: DataTypes.ENUM("company", "superadmin", "user"),
       required: true,
       defaultValue: "user",
     },

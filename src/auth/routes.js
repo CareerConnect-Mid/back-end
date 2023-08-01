@@ -22,15 +22,16 @@ authRouter.post("/signup", async (req, res, next) => {
 });
 
 authRouter.post("/signin", basicAuth, (req, res, next) => {
-  const user = { username: req.user.username, 
-    token: req.user.token,
-    role:req.user.role,
-    
-
-  
-  };
-
-  res.status(200).json(user);
+  try {
+    const user = {
+      username: req.user.username,
+      token: req.user.token,
+      role: req.user.role,
+    };
+    res.status(200).json(user);
+  } catch (e) {
+    next(e.message);
+  }
 });
 
 authRouter.get(
@@ -43,9 +44,5 @@ authRouter.get(
     res.status(200).json(list);
   }
 );
-
-authRouter.get("/secret", bearerAuth, async (req, res, next) => {
-  res.status(200).send("Welcome to the secret area");
-});
 
 module.exports = authRouter;

@@ -9,7 +9,7 @@ module.exports = async (req, res, next) => {
     const postUserId = postId["dataValues"].user_id;
     const userId = req.user.dataValues.id;
 
-    if (postUserId === userId) {
+    if (postUserId === userId||req.user.role==="superadmin") {
       next();
     } else {
       next("not allowed");

@@ -22,10 +22,14 @@ authRouter.post("/signup", async (req, res, next) => {
 });
 
 authRouter.post("/signin", basicAuth, (req, res, next) => {
-  const user = {
-    user: req.user,
+  const user = { username: req.user.username, 
     token: req.user.token,
+    role:req.user.role,
+    
+
+  
   };
+
   res.status(200).json(user);
 });
 

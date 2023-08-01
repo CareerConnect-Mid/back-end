@@ -37,6 +37,15 @@ class DataCollection {
     });
     return record;
 }
+  async getNotifications(id, model) {
+    let record = await this.model.findOne({
+        where: { id },
+        include: model,
+    });
+    return record;
+}
+
+
 
 }
 

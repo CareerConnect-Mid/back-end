@@ -26,11 +26,17 @@ const {
 } = require("../models/index");
 
 const router = express.Router();
+
+
+router.get('/',welcomeHandler)
+function welcomeHandler(req, res) {
+  res.status(200).send("Welcome to CareerConnect");
+}
+
 ////////////////////////////// Notification model
 router.get(
   "/usernotification",
   bearerAuth,
-  permissions("read"),
   userNotifications
 );
 ///////////////////////////// Notification model
@@ -195,22 +201,20 @@ router.param("model", (req, res, next) => {
   }
 });
 
-router.get("/:model", bearerAuth, permissions("read"), handleGetAll);
-router.get("/:model/:id", bearerAuth, permissions("read"), handleGetOne);
-router.post("/:model", bearerAuth, permissions("create"), handleCreate);
-router.post("/:model", bearerAuth, permissions("create"), handleCreateLikes);
+router.get("/:model", bearerAuth, handleGetAll);
+router.get("/:model/:id", bearerAuth, handleGetOne);
+router.post("/:model", bearerAuth,handleCreate);
+router.post("/:model", bearerAuth,handleCreateLikes);
 router.put(
   "/:model/:id",
   bearerAuth,
   checkId,
-  permissions("update"),
-  handleUpdate
+   handleUpdate
 );
 router.delete(
   "/:model/:id",
   bearerAuth,
   checkId,
-  permissions("delete"),
   handleDelete
 );
 
@@ -251,7 +255,7 @@ async function postLikes(req, res) {
   res.status(200).json(pLikes);
 }
 
-router.get("/users/:id/:model", bearerAuth, permissions("read"), userRecords);
+router.get("/users/:id/:model", bearerAuth, userRecords);
 
 async function userRecords(req, res) {
   const userId = parseInt(req.params.id);
@@ -283,11 +287,15 @@ async function handleGetOne(req, res) {
 
 async function handleCreate(req, res) {
   let obj = req.body;
+  let userId=req.user.id;
+  obj.user_id=userId
   let newRecord = await req.model.create(obj);
   res.status(201).json(newRecord);
 }
 async function handleCreateLikes(req, res) {
   let obj = req.body;
+  let userId=req.user.id;
+  obj.user_id=userId
   let newRecord = await req.model.create(obj);
   res.status(201).json(newRecord);
 }

@@ -24,7 +24,7 @@ async function sendFriendRequest(senderId, senderName, message, receiverId) {
       }
     );
 
-    console.log(response.data); // Log the response from the server (optional)
+    console.log(response.data);
     socket.emit("friendRequest", {
       senderId: senderId,
       senderName: senderName,
@@ -35,8 +35,8 @@ async function sendFriendRequest(senderId, senderName, message, receiverId) {
     console.error("Error sending friend request:", error.response.data);
   }
 }
-const senderId = 1; // Replace with the sender's user ID
-const senderName = "Sender's Username"; // Replace with the sender's username
-const message = "Hello, let's be friends!"; // Replace with the friend request message
-const receiverId = 9; // Replace with the receiver's user ID
+const senderId = 2;
+const senderName = "Sender's Username";
+const message = "Hello, let's be friends!";
+const receiverId = 16; // Replace with the receiver's user ID
 sendFriendRequest(senderId, senderName, message, receiverId);

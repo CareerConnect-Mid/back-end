@@ -50,6 +50,7 @@ io.on("connection", (socket) => {
     console.log(`User with ID ${userId} connected.`);
     userSockets[userId] = socket.id;
   });
+  /*---------------------- handle friend request notification - mohannad ------------------------ */
   socket.on("friendRequest", (data) => {
     console.log("Received friend request:", data);
     const receiverUserId = data.receiverId; // Replace this with the actual receiver's user ID
@@ -70,10 +71,8 @@ io.on("connection", (socket) => {
       // For example, you can store the notification in the database and deliver it when the receiver reconnects
     }
   });
+  /*---------------------- handle friend request notification - mohannad--------------------- */
 
-  /*--- */
-
-  /* --- */
   // Handle disconnection if needed
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);

@@ -8,6 +8,8 @@ const checkId = require("../auth/middleware/checkId");
 const jwt = require("jsonwebtoken");
 const SECRET = process.env.SECRET || "secretstring";
 const port = process.env.PORT || 3001;
+const {Sequelize} = require('sequelize');
+
 const {
   user,
   users,
@@ -20,6 +22,7 @@ const {
   notification,
   notificationModel,
   // notification2,
+  chat
 } = require("../models/index");
 
 const router = express.Router();
@@ -105,6 +108,82 @@ async function viewFriendRequests(req, res) {
 
 //------------------------friend requests routes mohannad
 //------------------------------------------------------
+
+
+
+
+//------------------------------------------------------
+//----------------------- Chat
+router.post("/sendMessage/:id", bearerAuth, SendMessage, viewMessages);
+async function SendMessage(req, res, next) {
+  try {
+    // check if the users exist
+    const receiverid = req.params.id;
+    const senderid = req.user.dataValues.id; //from tocken
+
+    const sender = await users.get(senderid);
+    const receiver = await users.get(receiverid);
+
+    const sendername = req.user.dataValues.username
+    if (!sender || !receiver) {
+      return res.status(404).json({ message: "User not found." });
+    }
+    
+
+    // create new Message
+    await chat.create({
+      sender_id: senderid,
+      receiver_id: receiverid,
+      message: req.body.message,
+      sender_name: sendername,
+    });
+
+    next();
+    // return res
+    //   .status(200).json(viewMessages);
+    //   // .json({ message: "the message sent successfully."});
+  } catch (error) {
+    next("an error occured, the sent message failed");
+  }
+}
+/*------------------*/
+
+router.get("/chat", viewAllMessages);
+async function viewAllMessages(req, res) {
+  const ma = await chat.findAll()
+  return res.status(200).json(ma);
+}
+
+
+/*-----------------*/
+router.get("/chat/:id", bearerAuth, viewMessages);
+async function viewMessages(req, res) {
+  try {
+
+    const receiverid = req.params.id;
+    const senderid = req.user.dataValues.id; //from tocken
+
+
+    const receivedMessage = await chat.findAll({
+
+      where: {
+        [Sequelize.Op.or]: [
+          { sender_id: senderid, receiver_id: receiverid },
+          { sender_id: receiverid, receiver_id: senderid },
+        ],
+      },
+      // order: [['timestamp', 'ASC']],
+    });
+
+    return res.status(200).json(receivedMessage);
+  } catch (error) {
+    console.error("Error retrieving received the messages:", error);
+    return res.status(500).json({
+      message: "An error occurred while retrieving received the messages.",
+    });
+  }
+}
+/*------------------*/
 
 router.param("model", (req, res, next) => {
   const modelName = req.params.model;
@@ -225,5 +304,9 @@ async function handleDelete(req, res) {
   let deletedRecord = await req.model.delete(id);
   res.status(200).json(deletedRecord);
 }
+
+
+
+
 
 module.exports = router;

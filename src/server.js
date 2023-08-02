@@ -11,14 +11,12 @@ const v2Routes = require("./routes/v2.js");
 const v3Routes = require("./routes/v3.js");
 const notFoundHandler = require("./error-handlers/404.js");
 const errorHandler = require("./error-handlers/500.js");
-
 const socketIo = require("socket.io");
 require("dotenv").config();
 /* ------------------------- handle recieved tocken from client , this to be removed later */
 const jwt = require("jsonwebtoken");
-
 const SECRET = process.env.SECRET || "secretstring";
-
+const { notificationModel } = require("./models/index");
 /* ----------------------------------------------------------------------------------------*/
 // const logger = require("./middleware/logger.js");
 const v1Routes = require("./routes/v1.js");
@@ -33,7 +31,7 @@ const io = new Server(server, {
   },
 });
 
-//--------------------------
+// --------------------------
 app.use(express.json());
 app.use("/api/v1", v1Routes);
 app.use("/career", v2Routes);
@@ -63,8 +61,7 @@ io.on("connection", (socket) => {
   /*---------------------- handle friend request notification - mohannad ------------------------ */
   socket.on("friendRequest", (data) => {
     console.log("Received friend request:", data);
-    const receiverUserId = data.receiverId; // Replace this with the actual receiver's user ID
-
+    const receiverUserId = data.receiverId;
     // Look up the receiver's socket ID using their user ID from the mapping
     const receiverSocketId = userSockets[receiverUserId];
 
@@ -75,10 +72,21 @@ io.on("connection", (socket) => {
         senderName: data.senderName,
         message: data.message,
       });
+      // Create a new entry in the notificationModel table
+      notificationModel.create({
+        sender_id: data.senderId,
+        receiver_id: data.receiverId,
+        message: "message",
+      });
     } else {
       console.log(`Receiver with user ID ${receiverUserId} is not connected.`);
       // Handle the case when the receiver is not currently connected (optional)
       // For example, you can store the notification in the database and deliver it when the receiver reconnects
+      notificationModel.create({
+        sender_id: data.senderId,
+        receiver_id: data.receiverId,
+        message: "message",
+      });
     }
   });
   /*---------------------- handle friend request notification - mohannad--------------------- */

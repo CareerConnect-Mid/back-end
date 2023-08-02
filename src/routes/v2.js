@@ -8,7 +8,7 @@ const checkId = require("../auth/middleware/checkId");
 const jwt = require("jsonwebtoken");
 const SECRET = process.env.SECRET || "secretstring";
 const port = process.env.PORT || 3001;
-const {Sequelize} = require('sequelize');
+const { Sequelize } = require("sequelize");
 
 const {
   user,
@@ -22,23 +22,33 @@ const {
   notification,
   notificationModel,
   // notification2,
-  chat
+  chat,
 } = require("../models/index");
 
 const router = express.Router();
 
-
-router.get('/',welcomeHandler)
+router.get("/", welcomeHandler);
 function welcomeHandler(req, res) {
   res.status(200).send("Welcome to CareerConnect");
 }
 
 ////////////////////////////// Notification model
-router.get(
-  "/usernotification",
-  bearerAuth,
-  userNotifications
-);
+router.get("/usernotification", bearerAuth, userNotifications);
+
+async function userNotifications(req, res) {
+  const token = req.headers.authorization.split(" ").pop();
+
+  const parsedToken = jwt.verify(token, SECRET);
+
+  let notifications = await notificationModel.findAll({
+    where: {
+      receiver_id: parsedToken.id,
+    },
+  });
+
+  res.status(200).json(notifications);
+}
+
 ///////////////////////////// Notification model
 
 //------------------------------------------------------
@@ -106,6 +116,45 @@ async function viewFriendRequests(req, res) {
     });
   }
 }
+
+router.get("/friends", bearerAuth, getFriends);
+
+async function getFriends(req, res) {
+  try {
+    const userId = req.user.dataValues.id; // Get the user ID from the authenticated user's token
+
+    // Find all friend requests where the status is "accepted" and the user is either the sender or the receiver
+    const friendRequests = await friendRequests.findAll({
+      where: {
+        status: "accepted",
+        [Sequelize.Op.or]: [{ sender_id: userId }, { receiver_id: userId }],
+      },
+    });
+
+    // Get the user IDs of the friends
+    const friendIds = friendRequests.map((request) => {
+      if (request.sender_id === userId) {
+        return request.receiver_id;
+      } else {
+        return request.sender_id;
+      }
+    });
+
+    // Fetch the user details for the friend IDs
+    const friends = await users.findAll({
+      where: {
+        id: friendIds,
+      },
+    });
+
+    return res.status(200).json(friends);
+  } catch (error) {
+    console.error("Error retrieving friends:", error);
+    return res
+      .status(500)
+      .json({ message: "An error occurred while retrieving friends." });
+  }
+}
 /*------------------*/
 
 router.post("/handle-friend-request", bearerAuth, handleFriendRequest);
@@ -127,18 +176,13 @@ async function handleFriendRequest(req, res) {
   // Save the updated status in the database
   await friendRequest.save();
   console.log(friendRequest);
-  return res
-    .status(200)
-    .json({
-      message: `Friend request is ${friendRequest.status} successfully.`,
-    });
+  return res.status(200).json({
+    message: `Friend request is ${friendRequest.status} successfully.`,
+  });
 }
 
 //------------------------friend requests routes mohannad
 //------------------------------------------------------
-
-
-
 
 //------------------------------------------------------
 //----------------------- Chat
@@ -152,11 +196,10 @@ async function SendMessage(req, res, next) {
     const sender = await users.get(senderid);
     const receiver = await users.get(receiverid);
 
-    const sendername = req.user.dataValues.username
+    const sendername = req.user.dataValues.username;
     if (!sender || !receiver) {
       return res.status(404).json({ message: "User not found." });
     }
-    
 
     // create new Message
     await chat.create({
@@ -178,22 +221,18 @@ async function SendMessage(req, res, next) {
 
 router.get("/chat", viewAllMessages);
 async function viewAllMessages(req, res) {
-  const ma = await chat.findAll()
+  const ma = await chat.findAll();
   return res.status(200).json(ma);
 }
-
 
 /*-----------------*/
 router.get("/chat/:id", bearerAuth, viewMessages);
 async function viewMessages(req, res) {
   try {
-
     const receiverid = req.params.id;
     const senderid = req.user.dataValues.id; //from tocken
 
-
     const receivedMessage = await chat.findAll({
-
       where: {
         [Sequelize.Op.or]: [
           { sender_id: senderid, receiver_id: receiverid },
@@ -225,41 +264,14 @@ router.param("model", (req, res, next) => {
 
 router.get("/:model", bearerAuth, handleGetAll);
 router.get("/:model/:id", bearerAuth, handleGetOne);
-router.post("/:model", bearerAuth,handleCreate);
-router.post("/:model", bearerAuth,handleCreateLikes);
-router.put(
-  "/:model/:id",
-  bearerAuth,
-  checkId,
-   handleUpdate
-);
-router.delete(
-  "/:model/:id",
-  bearerAuth,
-  checkId,
-  handleDelete
-);
+router.post("/:model", bearerAuth, handleCreate);
+router.post("/:model", bearerAuth, handleCreateLikes);
+router.put("/:model/:id", bearerAuth, checkId, handleUpdate);
+router.delete("/:model/:id", bearerAuth, checkId, handleDelete);
 
 router.get("/jobs/:id/jobcomments", bearerAuth, jobComments);
 router.get("/posts/:id/comments", bearerAuth, postComments);
 router.get("/posts/:id/likes", bearerAuth, postLikes);
-
-//////////////////////////////////////// Notification Model
-async function userNotifications(req, res) {
-  const token = req.headers.authorization.split(" ").pop();
-
-  const parsedToken = jwt.verify(token, SECRET);
-
-  let notifications = await notificationModel.findAll({
-    where: {
-      receiver_id: parsedToken.id,
-    },
-  });
-
-  res.status(200).json(notifications);
-}
-
-//////////////////////////////////////// Notification Model
 
 async function jobComments(req, res) {
   const jobId = parseInt(req.params.id);
@@ -309,15 +321,15 @@ async function handleGetOne(req, res) {
 
 async function handleCreate(req, res) {
   let obj = req.body;
-  let userId=req.user.id;
-  obj.user_id=userId
+  let userId = req.user.id;
+  obj.user_id = userId;
   let newRecord = await req.model.create(obj);
   res.status(201).json(newRecord);
 }
 async function handleCreateLikes(req, res) {
   let obj = req.body;
-  let userId=req.user.id;
-  obj.user_id=userId
+  let userId = req.user.id;
+  obj.user_id = userId;
   let newRecord = await req.model.create(obj);
   res.status(201).json(newRecord);
 }
@@ -334,9 +346,5 @@ async function handleDelete(req, res) {
   let deletedRecord = await req.model.delete(id);
   res.status(200).json(deletedRecord);
 }
-
-
-
-
 
 module.exports = router;

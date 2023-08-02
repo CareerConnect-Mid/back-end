@@ -8,6 +8,10 @@ const JobsModel = (sequelize, DataTypes) =>
     },
     job_title: {
       type: DataTypes.STRING(255),
+        get(){
+            const dataValue= this.getDataValue("job_title") //dataValue is built in, also the username wont be stored in db in uppercase
+            return dataValue.toUpperCase()
+        } 
     },
     job_city: {
       type: DataTypes.STRING(255),

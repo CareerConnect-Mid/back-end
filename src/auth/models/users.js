@@ -1,15 +1,19 @@
-'use strict';
+"use strict";
 
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
-const SECRET = process.env.SECRET || 'secretstring';
+const SECRET = process.env.SECRET || "secretstring";
 
 const userModel = (sequelize, DataTypes) => {
-  const model = sequelize.define('users', {
+  const model = sequelize.define("users", {
     username: { type: DataTypes.STRING, required: true, unique: true },
     password: { type: DataTypes.STRING, required: true },
-    role: { type: DataTypes.ENUM('user', 'writer', 'editor', 'admin'), required: true, defaultValue: 'user'},
+    role: {
+      type: DataTypes.ENUM("company", "superadmin", "user"),
+      required: true,
+      defaultValue: "user",
+    },
     firstName: { type: DataTypes.STRING },
     lastName: { type: DataTypes.STRING },
     email: { type: DataTypes.STRING },
@@ -22,32 +26,31 @@ const userModel = (sequelize, DataTypes) => {
     profilePicture: { type: DataTypes.STRING },
     imageForCover: { type: DataTypes.STRING },
     career: { type: DataTypes.STRING },
+    bio: { type: DataTypes.STRING },
     token: {
       type: DataTypes.VIRTUAL,
       get() {
-        return jwt.sign({ username: this.username , id: this.id }, SECRET);
+        return jwt.sign({ username: this.username, id: this.id }, SECRET);
       },
       set(tokenObj) {
         let token = jwt.sign(tokenObj, SECRET);
         return token;
-      }
+      },
     },
     capabilities: {
       type: DataTypes.VIRTUAL,
       get() {
         const acl = {
-          user: ['read'],
-          writer: ['read', 'create'],
-          editor: ['read', 'create', 'update'],
-          admin: ['read', 'create', 'update', 'delete']
+          company: ["read", "create", "update", "delete","read job","create job","update job","delete job"],
+          superadmin: ["read", "create", "update", "delete"],
+          user: ["read", "create", "update", "delete"],
         };
         return acl[this.role];
-      }
-    }
+      },
+    },
   });
 
   model.beforeCreate(async (user) => {
-    
     let hashedPass = await bcrypt.hash(user.password, 10);
     user.password = hashedPass;
   });
@@ -55,28 +58,34 @@ const userModel = (sequelize, DataTypes) => {
   model.authenticateBasic = async function (username, password) {
     const user = await this.findOne({ where: { username } });
     const valid = await bcrypt.compare(password, user.password);
-    if (valid) { return user; }
-    throw new Error('Invalid User');
+    if (valid) {
+      return user;
+    }
+    throw new Error("Invalid User");
   };
 
   model.authenticateToken = async function (token) {
     try {
       const parsedToken = jwt.verify(token, SECRET);
-      const user = this.findOne({where: { username: parsedToken.username } });
-      if (user) { return user; }
+      const user = this.findOne({ where: { username: parsedToken.username } });
+      if (user) {
+        return user;
+      }
       throw new Error("User Not Found");
     } catch (e) {
-      throw new Error(e.message)
+      throw new Error(e.message);
     }
   };
 
   model.getId = async function (token) {
     const parsedToken = jwt.verify(token, SECRET);
-    const user = this.findOne({where: { username: parsedToken.username } });
-    if (user) { return user.id; }
-  }
+    const user = this.findOne({ where: { username: parsedToken.username } });
+    if (user) {
+      return user.id;
+    }
+  };
 
   return model;
-}
+};
 
 module.exports = userModel;

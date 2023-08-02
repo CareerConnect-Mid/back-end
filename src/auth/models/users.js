@@ -48,6 +48,7 @@ const userModel = (sequelize, DataTypes) => {
         return acl[this.role];
       },
     },
+    isTokenBlacklisted: { type: DataTypes.BOOLEAN, defaultValue: false },
   });
 
   model.beforeCreate(async (user) => {
@@ -77,6 +78,29 @@ const userModel = (sequelize, DataTypes) => {
     }
   };
 
+  //----------Logout------------
+
+  model.invalidateToken = async function (token) {
+    try {
+      const decodedToken = jwt.verify(token, SECRET);
+      const username = decodedToken.username;
+      const user = await this.findOne({ where: { username } });
+
+      if (!user) {
+        throw new Error("User Not Found");
+      }
+
+      user.isTokenBlacklisted = true;
+      await user.save();
+
+      return true;
+
+    } catch (e) {
+      throw new Error(e.message);
+    }
+  };
+
+  //-------------------------------------------------
   model.getId = async function (token) {
     const parsedToken = jwt.verify(token, SECRET);
     const user = this.findOne({ where: { username: parsedToken.username } });

@@ -1,24 +1,26 @@
-"use strict";
+'use strict'
+// const {userModel} = require("../../auth/models/users");
+const {userModel} = require("../../models/index");
 
-const { userModel } = require("../../models/index");
-
-module.exports = async (req, res, next) => {
+const bearerAuth = async (req, res, next) => {
   try {
     if (!req.headers.authorization) {
-      _authError();
+      throw new Error("Invalid Login");
     }
 
     const token = req.headers.authorization.split(" ").pop();
     const validUser = await userModel.authenticateToken(token);
+
+    if (!validUser || validUser.isTokenBlacklisted) {
+      throw new Error("Invalid Login");
+    }
+
     req.user = validUser;
     req.token = validUser.token;
-    // console.log("validUser ====>", validUser.dataValues)
     next();
   } catch (e) {
-    _authError();
-  }
-
-  function _authError() {
-    next("Invalid Login");
+    next(e); 
   }
 };
+
+module.exports = bearerAuth;

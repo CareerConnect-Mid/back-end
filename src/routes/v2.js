@@ -22,7 +22,8 @@ const {
   notification,
   notificationModel,
   // notification2,
-  chat
+  chat,
+  cv
 } = require("../models/index");
 
 const router = express.Router();
@@ -201,6 +202,18 @@ router.param("model", (req, res, next) => {
   }
 });
 
+
+
+router.get("/cv", bearerAuth, handleGetAllCV);
+router.get("/cv/:id", bearerAuth, handleGetOneCV);
+router.get("/cvtitle/:title", bearerAuth, handleGetCVbyTitle);
+router.get("/cvfield/:field", bearerAuth, handleGetCVbyfield);
+router.get("/cv/:title/:field", bearerAuth, handleGetCVbyTitleAndField);
+router.post("/cv", bearerAuth,handleCreateCV);
+
+
+
+
 router.get("/:model", bearerAuth, handleGetAll);
 router.get("/:model/:id", bearerAuth, handleGetOne);
 router.post("/:model", bearerAuth,handleCreate);
@@ -310,6 +323,72 @@ async function handleDelete(req, res) {
 }
 
 
+//--------------------------------------------------------CV get & creat & search ---------------------------
+
+async function handleGetAllCV(req, res) {
+  if(req.user.role !=='user'){
+    let allRecords = await cv.get();
+    const list = allRecords.map((cv) => cv.cv_link);
+    res.status(200).json(list);
+  }else{
+    res.status(200).json('you dont have Permission');
+  }
+}
+
+async function handleGetOneCV(req, res) {
+  if(req.user.role !='user' || req.params.id == req.user.id ){
+    const id = req.params.id;
+    let theRecord = await cv.get(id);
+    res.status(200).json(theRecord.cv_link);
+  }else{
+    res.status(200).json('you dont have Permission');
+  }
+}
+
+async function handleCreateCV(req, res) {
+  if(req.user.role !=='company'){
+    let obj = req.body;
+    let userId=req.user.id;
+    obj.user_id=userId
+    let newRecord = await cv.create(obj);
+    res.status(201).json(newRecord);
+  }else{
+    res.status(200).json('you dont have Permission to make cv');
+  }
+
+}
+
+async function handleGetCVbyTitle(req, res) {
+  if(req.user.role !='user' || req.params.id == req.user.id ){
+    const title = req.params.title
+    let theRecord = await cv.getCVbyTitle(title);
+    res.status(200).json(theRecord.cv_link);
+  }else{
+    res.status(200).json('you dont have Permission');
+  }
+}
+
+async function handleGetCVbyfield(req, res) {
+    if(req.user.role !='user' || req.params.id == req.user.id ){
+      const field = req.params.field
+      let theRecord = await cv.getCVbyfield(field);
+      res.status(200).json(theRecord.cv_link);
+    }else{
+      res.status(200).json('you dont have Permission');
+    }
+}
+
+async function handleGetCVbyTitleAndField(req, res) {
+  if(req.user.role !='user' || req.params.id == req.user.id ){
+    const title = req.params.title;
+    const field = req.params.field;
+    let allRecords = await cv.getCVbyTitleAndField(title,field);
+    const list = allRecords.map((cv) => cv.cv_link);
+    res.status(200).json(list);
+  }else{
+    res.status(200).json('you dont have Permission');
+  }
+}
 
 
 

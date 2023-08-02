@@ -6,8 +6,9 @@ const commentsModel = require("./comments/model.js");
 const userModel = require("../../src/auth/models/users.js");
 const JobsModel = require("./jobs/model");
 const jobComments = require("./jobcomments/model.js");
-const likesModel= require('./likes/model.js')
-const chatModel= require('./chat/model.js')
+const likesModel= require('./likes/model.js');
+const chatModel= require('./chat/model.js');
+const cvModel = require("./cv/cv.js");
 const {
   friendRequestsModel,
 } = require("./friendrequests/FriendRequest.model.js");
@@ -36,8 +37,9 @@ const posts = postsModel(sequelize, DataTypes);
 const jobcomments = jobComments(sequelize, DataTypes);
 const comment = commentsModel(sequelize, DataTypes);
 const jobs = JobsModel(sequelize, DataTypes);
-const user=userModel(sequelize,DataTypes)
-const like=likesModel(sequelize,DataTypes)
+const user=userModel(sequelize,DataTypes);
+const like=likesModel(sequelize,DataTypes);
+const cv = cvModel(sequelize, DataTypes);
 ///////////////////////////////////////////// Notification Model
 const notification=notificationModel(sequelize,DataTypes)
 notification.belongsTo(user, { foreignKey: "sender_id", as: "sender" });
@@ -83,6 +85,10 @@ comment.belongsTo(posts, { foreignKey: "post_id" });
 
 user.hasMany(jobs, { foreignKey: "user_id" });
 jobs.belongsTo(user, { foreignKey: "user_id" });
+
+user.hasMany(cv, { foreignKey: "user_id" });
+cv.belongsTo(user, { foreignKey: "user_id" });
+
 //------------------------------------
 //----------- friend requests mohannad
 friendRequests.belongsTo(user, { foreignKey: "sender_id", as: "sender" });
@@ -137,5 +143,6 @@ module.exports = {
   friendRequests: friendRequests,
   notification:new Collection(notification),
   notificationModel:notification,
-  chat: chat
+  chat: chat,
+  cv: new Collection(cv),
 };

@@ -6,14 +6,14 @@ const commentsModel = require("./comments/model.js");
 const userModel = require("../../src/auth/models/users.js");
 const JobsModel = require("./jobs/model");
 const jobComments = require("./jobcomments/model.js");
-const likesModel= require('./likes/model.js');
-const chatModel= require('./chat/model.js');
+const likesModel = require("./likes/model.js");
+const chatModel = require("./chat/model.js");
 const cvModel = require("./cv/cv.js");
+const { friendsModel } = require("./friends/friends.model.js");
 const {
   friendRequestsModel,
 } = require("./friendrequests/FriendRequest.model.js");
-const notificationModel=require('./notification/model.js')
-
+const notificationModel = require("./notification/model.js");
 
 const POSTGRESS_URI =
   process.env.NODE_ENV === "test"
@@ -37,11 +37,11 @@ const posts = postsModel(sequelize, DataTypes);
 const jobcomments = jobComments(sequelize, DataTypes);
 const comment = commentsModel(sequelize, DataTypes);
 const jobs = JobsModel(sequelize, DataTypes);
-const user=userModel(sequelize,DataTypes);
-const like=likesModel(sequelize,DataTypes);
+const user = userModel(sequelize, DataTypes);
+const like = likesModel(sequelize, DataTypes);
 const cv = cvModel(sequelize, DataTypes);
 ///////////////////////////////////////////// Notification Model
-const notification=notificationModel(sequelize,DataTypes)
+const notification = notificationModel(sequelize, DataTypes);
 notification.belongsTo(user, { foreignKey: "sender_id", as: "sender" });
 user.hasMany(notification, {
   foreignKey: "sender_id",
@@ -64,15 +64,14 @@ jobcomments.hasMany(notification, { foreignKey: "job_comment_id" });
 notification.belongsTo(comment, { foreignKey: "comment_id" });
 comment.hasMany(notification, { foreignKey: "comment_id" });
 //////////////////////////////////////////// Notification Model
-const chat=chatModel(sequelize,DataTypes)
+const chat = chatModel(sequelize, DataTypes);
 const friendRequests = friendRequestsModel(sequelize, DataTypes);
 
-user.hasMany(like,{foreignKey:"user_id"});
-like.belongsTo(user,{foreignKey:"user_id"})
+user.hasMany(like, { foreignKey: "user_id" });
+like.belongsTo(user, { foreignKey: "user_id" });
 
-posts.hasMany(like,{foreignKey:"post_id"});
-like.belongsTo(posts,{foreignKey:"post_id"})
-
+posts.hasMany(like, { foreignKey: "post_id" });
+like.belongsTo(posts, { foreignKey: "post_id" });
 
 user.hasMany(posts, { foreignKey: "user_id" });
 posts.belongsTo(user, { foreignKey: "user_id" });
@@ -109,6 +108,48 @@ user.hasMany(friendRequests, {
 //----------- friend requests mohannad
 //------------------------------------
 
+//------------------------------------
+//----------- friends mohannad
+
+const friendstable = friendsModel(sequelize, DataTypes);
+
+// user.belongsToMany(user, {
+//   through: friends,
+//   as: "friends",
+//   foreignKey: "personId",
+//   otherKey: "friendId",
+// });
+
+// friends.belongsTo(user, { foreignKey: "personId" });
+// friends.belongsTo(user, { foreignKey: "friendId" });
+
+// FriendRequests.belongsTo(user, { foreignKey: "sender_id", as: "sender" });
+// user.hasMany(FriendRequests, {
+//   foreignKey: "sender_id",
+//   as: "sentFriendRequests",
+// });
+
+// FriendRequests.belongsTo(user, {
+//   foreignKey: "receiver_id",
+//   as: "receiver",
+// });
+// user.hasMany(FriendRequests, {
+//   foreignKey: "receiver_id",
+//   as: "receivedFriendRequests",
+// });
+
+user.belongsToMany(user, {
+  through: friendstable,
+  as: "userFriends",
+  foreignKey: "personId",
+  otherKey: "friendId",
+});
+
+friendstable.belongsTo(user, { foreignKey: "personId", as: "person" });
+friendstable.belongsTo(user, { foreignKey: "friendId", as: "friend" });
+
+//----------- friends mohannad
+//------------------------------------
 
 //------------------------------------
 //----------- chat aljamal
@@ -130,7 +171,6 @@ user.hasMany(chat, {
 //----------- chat aljamal
 //------------------------------------
 
-
 module.exports = {
   db: sequelize,
   posts: new Collection(posts),
@@ -141,8 +181,9 @@ module.exports = {
   userModel: user,
   likes: new Collection(like),
   friendRequests: friendRequests,
-  notification:new Collection(notification),
-  notificationModel:notification,
+  notification: new Collection(notification),
+  notificationModel: notification,
   chat: chat,
   cv: new Collection(cv),
+  friends: friendstable,
 };

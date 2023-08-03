@@ -24,6 +24,10 @@ const NotificationsModel = (sequelize, DataTypes) =>
       type: DataTypes.STRING(255),
       allowNull: false,
     },
+    is_seen: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
     // timestamp: {
     //   type: DataTypes.DATE,
     //   allowNull: false,

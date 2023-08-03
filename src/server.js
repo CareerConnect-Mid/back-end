@@ -55,6 +55,7 @@ io.on("connection", (socket) => {
     userSockets[userId] = socket.id;
   });
   /*---------------------- handle friend request notification - mohannad ------------------------ */
+  // -------- incoming friend request ---
   socket.on("friendRequest", (data) => {
     console.log("Received friend request: and stored in database", data);
     const receiverUserId = data.receiverId;
@@ -87,6 +88,50 @@ io.on("connection", (socket) => {
       });
     }
   });
+  // -------- incoming friend request ---
+
+  //-----------firend request handler ---
+  socket.on("friendRequestHandled", (data) => {
+    console.log(" friend request is handled and stored in database", data);
+    const senderUserId = data.senderId;
+    // Look up the receiver's socket ID using their user ID from the mapping
+    const senderSocketId = userSockets[senderUserId];
+
+    if (senderSocketId) {
+      // If the receiver's socket ID is found in the mapping, emit the friendRequestNotification event
+      io.to(senderSocketId).emit("friendRequestHandled", {
+        senderId: data.senderId,
+        senderName: data.senderName,
+        message: data.message,
+      });
+      // Create a new entry in the notificationModel table
+      notificationModel.update(
+        { is_seen: true },
+        {
+          where: {
+            sender_id: data.senderId,
+            receiver_id: data.receiverId,
+            action_type: "friend_request",
+            is_seen: false, // Only update notifications that are not yet seen
+          },
+        }
+      );
+      console.log("Notification marked as seen in the database.");
+      // a new notification is supmetted to the friend request sender , telleng him that his friend request is accepted
+    } else {
+      console.log(`Receiver with user ID ${receiverUserId} is not connected.`);
+      // Handle the case when the receiver is not currently connected (optional)
+      // For example, you can store the notification in the database and deliver it when the receiver reconnects
+      notificationModel.create({
+        sender_id: data.senderId,
+        receiver_id: data.receiverId,
+        message: data.message,
+        action_type: "friend_request",
+      });
+    }
+  });
+
+  //-----------firend request handler ---
   /*---------------------- handle friend request notification - mohannad--------------------- */
   /*---------------------- handle message and message notification - mohannad ------------------------ */
   socket.on("newMessage", async (data) => {

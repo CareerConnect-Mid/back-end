@@ -9,7 +9,7 @@ const jwt = require("jsonwebtoken");
 const SECRET = process.env.SECRET || "secretstring";
 const port = process.env.PORT || 3001;
 const { Sequelize } = require("sequelize");
-
+const sequelize = require("sequelize");
 const {
   userModel,
   users,
@@ -22,9 +22,8 @@ const {
   notification,
   notificationModel,
   chat,
-  // notification2,
-  chat,
   cv,
+  friends,
 } = require("../models/index");
 
 const router = express.Router();
@@ -125,30 +124,27 @@ async function getFriends(req, res) {
   try {
     const userId = req.user.dataValues.id; // Get the user ID from the authenticated user's token
 
-    // Find all friend requests where the status is "accepted" and the user is either the sender or the receiver
-    const friend = await friendRequests.findAll({
-      where: {
-        status: "accepted",
-        [Sequelize.Op.or]: [{ sender_id: userId }, { receiver_id: userId }],
-      },
+    const user = await userModel.findByPk(userId, {
+      include: [
+        {
+          association: "userFriends",
+          attributes: [
+            "id",
+            "username",
+            "firstName",
+            "lastName",
+            "profilePicture",
+          ],
+        },
+      ],
     });
 
-    // Get the user IDs of the friends
-    const friendIds = friend.map((request) => {
-      if (request.sender_id === userId) {
-        return request.receiver_id;
-      } else {
-        return request.sender_id;
-      }
-    });
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
 
-    // Fetch the user details for the friend IDs
-    // const friends = users.get(friendIds);
-    const friends = await userModel.findAll({
-      where: {
-        id: friendIds,
-      },
-    });
+    // The user's friends will be available in the "userFriends" property
+    const friends = user.userFriends;
 
     return res.status(200).json(friends);
   } catch (error) {
@@ -158,35 +154,66 @@ async function getFriends(req, res) {
       .json({ message: "An error occurred while retrieving friends." });
   }
 }
+
 /*------------------*/
 
-router.post("/handle-friend-request", bearerAuth, handleFriendRequest);
+router.post("/handle-friend-request/:id", bearerAuth, handleFriendRequest);
 
 async function handleFriendRequest(req, res) {
-  const { sender_id, request_id, action } = req.body; // might be changed to put the id of the sender in the route
-  // const friendRequestid = requestid || senderid;
+  const senderid = req.params.id;
+  const { action } = req.body;
+
   const friendRequest = await friendRequests.findOne({
     where: {
-      sender_id: sender_id,
+      sender_id: senderid,
     },
   });
   if (!friendRequest) {
     return res.status(404).json({ message: "Friend request not found." });
   }
+
   if (action === "accept") {
     friendRequest.status = "accepted";
+
+    // Save the updated status in the database
+    await friendRequest.save();
+
+    // Create friendship records
+    // const Friendship = sequelize.models.friends;
+    await friends.create({
+      personId: friendRequest.sender_id,
+      friendId: friendRequest.receiver_id,
+    });
+
+    await friends.create({
+      personId: friendRequest.receiver_id,
+      friendId: friendRequest.sender_id,
+    });
   } else if (action === "decline") {
-    friendRequest.status = "declined";
+    // Remove the friend request record from the database
+    await friendRequest.destroy();
   } else {
     return res.status(400).json({ message: "Invalid action." });
   }
-  const requestToUpdate = friendRequest;
-  // Save the updated status in the database
-  await requestToUpdate.save();
-  console.log(friendRequest);
+
   return res.status(200).json({
     message: `Friend request is ${friendRequest.status} successfully.`,
   });
+
+  // if (action === "accept") {
+  //   friendRequest.status = "accepted";
+  // } else if (action === "decline") {
+  //   friendRequest.status = "declined";
+  // } else {
+  //   return res.status(400).json({ message: "Invalid action." });
+  // }
+  // const requestToUpdate = friendRequest;
+  // // Save the updated status in the database
+  // await requestToUpdate.save();
+  // console.log(friendRequest);
+  // return res.status(200).json({
+  //   message: `Friend request is ${friendRequest.status} successfully.`,
+  // });
 }
 
 //------------------------friend requests routes mohannad

@@ -11,7 +11,7 @@ const port = process.env.PORT || 3001;
 const { Sequelize } = require("sequelize");
 
 const {
-  user,
+  userModel,
   users,
   posts,
   jobcomments,
@@ -21,7 +21,6 @@ const {
   likes,
   notification,
   notificationModel,
-  // notification2,
   chat,
 } = require("../models/index");
 
@@ -124,7 +123,7 @@ async function getFriends(req, res) {
     const userId = req.user.dataValues.id; // Get the user ID from the authenticated user's token
 
     // Find all friend requests where the status is "accepted" and the user is either the sender or the receiver
-    const friendRequests = await friendRequests.findAll({
+    const friend = await friendRequests.findAll({
       where: {
         status: "accepted",
         [Sequelize.Op.or]: [{ sender_id: userId }, { receiver_id: userId }],
@@ -132,7 +131,7 @@ async function getFriends(req, res) {
     });
 
     // Get the user IDs of the friends
-    const friendIds = friendRequests.map((request) => {
+    const friendIds = friend.map((request) => {
       if (request.sender_id === userId) {
         return request.receiver_id;
       } else {
@@ -141,7 +140,8 @@ async function getFriends(req, res) {
     });
 
     // Fetch the user details for the friend IDs
-    const friends = await users.findAll({
+    // const friends = users.get(friendIds);
+    const friends = await userModel.findAll({
       where: {
         id: friendIds,
       },
@@ -160,9 +160,13 @@ async function getFriends(req, res) {
 router.post("/handle-friend-request", bearerAuth, handleFriendRequest);
 
 async function handleFriendRequest(req, res) {
-  const { senderid, requestid, action } = req.body;
-  const friendRequestid = requestid || senderid;
-  const friendRequest = await friendRequests.findByPk(friendRequestid);
+  const { sender_id, request_id, action } = req.body; // might be changed to put the id of the sender in the route
+  // const friendRequestid = requestid || senderid;
+  const friendRequest = await friendRequests.findOne({
+    where: {
+      sender_id: sender_id,
+    },
+  });
   if (!friendRequest) {
     return res.status(404).json({ message: "Friend request not found." });
   }
@@ -173,8 +177,9 @@ async function handleFriendRequest(req, res) {
   } else {
     return res.status(400).json({ message: "Invalid action." });
   }
+  const requestToUpdate = friendRequest;
   // Save the updated status in the database
-  await friendRequest.save();
+  await requestToUpdate.save();
   console.log(friendRequest);
   return res.status(200).json({
     message: `Friend request is ${friendRequest.status} successfully.`,

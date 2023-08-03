@@ -12,7 +12,6 @@ const v3Routes = require("./routes/v3.js");
 const notFoundHandler = require("./error-handlers/404.js");
 const errorHandler = require("./error-handlers/500.js");
 const socketIo = require("socket.io");
-require("dotenv").config();
 /* ------------------------- handle recieved tocken from client , this to be removed later */
 const jwt = require("jsonwebtoken");
 const SECRET = process.env.SECRET || "secretstring";
@@ -44,23 +43,20 @@ app.use(cors());
 app.use(morgan("dev"));
 app.use(express.urlencoded({ extended: true }));
 
-/* -------------------------------------------------------------------------------------- */
+/* ------------------------saving each connected user id with there socket id-------------------- */
 const userSockets = {};
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
-
   socket.on("sendToken", ({ token }) => {
     const parsedToken = jwt.verify(token, SECRET);
     const userId = parsedToken.id;
     console.log(
-      `Received token from the client: welcome ${parsedToken.username}`
+      `Received token from the client, User with ID ${userId} connected: welcome ${parsedToken.username}`
     );
-    console.log(`User with ID ${userId} connected.`);
     userSockets[userId] = socket.id;
   });
   /*---------------------- handle friend request notification - mohannad ------------------------ */
   socket.on("friendRequest", (data) => {
-    console.log("Received friend request:", data);
+    console.log("Received friend request: and stored in database", data);
     const receiverUserId = data.receiverId;
     // Look up the receiver's socket ID using their user ID from the mapping
     const receiverSocketId = userSockets[receiverUserId];
@@ -76,7 +72,8 @@ io.on("connection", (socket) => {
       notificationModel.create({
         sender_id: data.senderId,
         receiver_id: data.receiverId,
-        message: "message",
+        message: data.message,
+        action_type: "friend_request",
       });
     } else {
       console.log(`Receiver with user ID ${receiverUserId} is not connected.`);
@@ -85,11 +82,49 @@ io.on("connection", (socket) => {
       notificationModel.create({
         sender_id: data.senderId,
         receiver_id: data.receiverId,
-        message: "message",
+        message: data.message,
+        action_type: "friend_request",
       });
     }
   });
   /*---------------------- handle friend request notification - mohannad--------------------- */
+  /*---------------------- handle message and message notification - mohannad ------------------------ */
+  socket.on("newMessage", async (data) => {
+    try {
+      const receiverUserId = data.receiverId; // Replace this with the actual receiver's user ID
+
+      // Look up the receiver's socket ID using their user ID from the mapping
+      const receiverSocketId = userSockets[receiverUserId];
+
+      if (receiverSocketId) {
+        // Emit the custom event "newMessage" to the receiver's socket
+        io.to(receiverSocketId).emit("newMessage", {
+          senderId: data.senderId,
+          senderName: data.senderName,
+          message: data.message,
+        });
+      } else {
+        console.log(
+          `Receiver with user ID ${receiverUserId} is not connected.`
+        );
+        notificationModel.create({
+          sender_id: data.senderId,
+          receiver_id: data.receiverId,
+          message: data.message,
+          action_type: "new_message",
+        });
+      }
+
+      // Emit a "messageSent" event to the sender's socket
+      const senderSocketId = socket.id;
+      io.to(senderSocketId).emit("messageSent", {
+        message: "Your message has been sent successfully.",
+      });
+    } catch (error) {
+      console.error("Error sending message notification:", error);
+    }
+  });
+  /*---------------------- handle message and message notification - mohannad------------------------- */
 
   // Handle disconnection if needed
   socket.on("disconnect", () => {

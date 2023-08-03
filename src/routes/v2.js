@@ -23,7 +23,9 @@ const {
   notificationModel,
   // notification2,
   chat,
-  cv
+  cv,
+  joinRequests,
+  followers
 } = require("../models/index");
 
 const router = express.Router();
@@ -47,7 +49,8 @@ router.get(
 router.post("/send-friend-request/:id", bearerAuth, SendFriendRequest);
 async function SendFriendRequest(req, res) {
   try {
-    // check if the users exist
+    if(req.user.role !== 'company'){
+      // check if the users exist
     const receiverid = req.params.id;
     const senderid = req.user.dataValues.id; //from tocken
 
@@ -60,8 +63,10 @@ async function SendFriendRequest(req, res) {
     // check if the request is already sent so that it doesnet dublicate
     const existingRequest = await friendRequests.findOne({
       where: {
-        sender_id: senderid,
-        receiver_id: receiverid,
+        [Sequelize.Op.or]: [
+          { sender_id: senderid, receiver_id: receiverid },
+          { sender_id: receiverid, receiver_id: senderid },
+        ],
       },
     });
 
@@ -80,6 +85,13 @@ async function SendFriendRequest(req, res) {
     return res
       .status(200)
       .json({ message: "Friend request sent successfully." });
+    } 
+    else 
+    {
+      return res
+      .status(200)
+      .json("you don't have Permission");
+    }
   } catch (error) {
     next("an error occured, the friend request failed");
   }
@@ -118,9 +130,183 @@ async function viewFriendRequests(req, res) {
 
 
 
+//------------------------------------------------------
+//-----------------------JOIN requests routes aljamal
+
+router.post("/send-join-request/:id", bearerAuth, SendJoinRequest);
+async function SendJoinRequest(req, res, next) {
+  try {
+
+      // check if the users exist
+    const receiverid = req.params.id;
+    const receiver = await users.get(receiverid);
+    console.log(receiverid,receiver)
+    if(req.user.role !== 'company' && receiver.dataValues.role == 'company'){
+      // check if the users exist
+    const senderid = req.user.dataValues.id; //from tocken
+    const sender = await users.get(senderid);
+
+    if (!sender || !receiver) {
+      return res.status(404).json("User not found.");
+    }
+    // check if the request is already sent so that it doesnet dublicate
+    const existingRequest = await joinRequests.findOne({
+      where: {
+        sender_id: senderid,
+        receiver_id: receiverid,
+      },
+    });
+
+    if (existingRequest) {
+      return res.status(400).json("Join request already sent.");
+    }
+
+    // create the new Join request
+    // Create a new Join request entry in the JoinRequest table
+    await joinRequests.create({
+      sender_id: senderid,
+      receiver_id: receiverid,
+      message: `you have a join request from ${receiver.dataValues.username}`,
+    });
+
+    return res
+      .status(200)
+      .json("Join request sent successfully.");
+    } 
+    else 
+    {
+      return res
+      .status(200)
+      .json("you don't have Permission");
+    }
+  } catch (error) {
+    next("an error occured, the Join request failed");
+  }
+}
+/*------------------*/
+router.get("/received-Join-requests", bearerAuth, viewJoinRequests);
+async function viewJoinRequests(req, res, next) {
+  try {
+    if(req.user.dataValues.role == 'company'){
+      const receiverid = req.user.dataValues.id; //from tocken
+
+      const receivedJoinRequests = await joinRequests.findAll({
+        where: { receiver_id: receiverid },
+      });
+  
+      if (receivedJoinRequests.length === 0) {
+        return res.status(404).json({
+          message: "No Join requests received for the specified user.",
+        });
+      }
+      return res.status(200).json(receivedJoinRequests);
+    } else {
+      return res
+      .status(200)
+      .json("you don't have Permission");
+    }
+    } catch (error) {
+      console.error("Error retrieving received friend requests:", error);
+      return res.status(500).json({
+        message: "An error occurred while retrieving received friend requests.",
+      });
+    
+    }
+   
+}
+//------------------------JOIN requests routes aljamal
+//------------------------------------------------------
+
 
 //------------------------------------------------------
-//----------------------- Chat
+//-----------------------Followers routes aljamal
+
+router.post("/makefollow/:id", bearerAuth, makeFollow);
+async function makeFollow(req, res, next) {
+  try {
+
+      // check if the users exist
+    const receiverid = req.params.id;
+    const receiver = await users.get(receiverid);
+
+    if(req.user.role !== 'company' && receiver.dataValues.role == 'company'){
+
+      // check if the users exist
+    const senderid = req.user.dataValues.id; //from tocken
+    const sender = await users.get(senderid);
+
+    if (!sender || !receiver) {
+      return res.status(404).json("User not found.");
+    }
+    // check if the request is already sent so that it doesnet dublicate
+    const existingRequest = await followers.findOne({
+      where: {
+        sender_id: senderid,
+        receiver_id: receiverid
+      },
+    });
+
+    if (existingRequest) {
+      return res.status(400).json(`You are already follow ${receiver.dataValues.username} company`);
+    }
+
+    // create the new Join request
+    // Create a new Join request entry in the JoinRequest table
+    await followers.create({
+      sender_id: senderid,
+      receiver_id: receiverid
+    });
+
+    return res
+      .status(200)
+      .json(`You are now following ${receiver.dataValues.username} company.`);
+    } 
+    else 
+    {
+      return res
+      .status(200)
+      .json("you don't have Permission");
+    }
+  } catch (error) {
+    next("an error occured, the Join request failed");
+  }
+}
+/*------------------*/
+router.get("/followers", bearerAuth, viewFollowers);
+async function viewFollowers(req, res, next) {
+  try {
+    if(req.user.dataValues.role == 'company'){
+      const receiverid = req.user.dataValues.id; //from tocken
+
+      const receivedFollowers = await followers.findAll({
+        where: { receiver_id: receiverid },
+      });
+  
+      if (receivedFollowers.length === 0) {
+        return res.status(404).json("there is no followersto your company yet");
+      }
+
+      return res.status(200).json(receivedFollowers);
+    } else {
+      return res
+      .status(200)
+      .json("you don't have Permission");
+    }
+    } catch (error) {
+      console.error("Error retrieving received friend requests:", error);
+      return res.status(500).json({
+        message: "An error occurred while retrieving received friend requests.",
+      });
+    
+    }
+   
+}
+//------------------------Followers routes aljamal
+//------------------------------------------------------
+
+
+//------------------------------------------------------
+//----------------------- Chat aljamal
 router.post("/sendMessage/:id", bearerAuth, SendMessage, viewMessages);
 async function SendMessage(req, res, next) {
   try {
@@ -190,7 +376,9 @@ async function viewMessages(req, res) {
     });
   }
 }
-/*------------------*/
+//------------------------Chat aljamal
+//------------------------------------------------------
+
 
 router.param("model", (req, res, next) => {
   const modelName = req.params.model;

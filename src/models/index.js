@@ -9,6 +9,8 @@ const jobComments = require("./jobcomments/model.js");
 const likesModel= require('./likes/model.js');
 const chatModel= require('./chat/model.js');
 const cvModel = require("./cv/cv.js");
+const joinRequestsModel = require("./joinRequests/joinRequest.model.js");
+const followersModel = require("./followers/followers.js")
 const {
   friendRequestsModel,
 } = require("./friendrequests/FriendRequest.model.js");
@@ -40,6 +42,8 @@ const jobs = JobsModel(sequelize, DataTypes);
 const user=userModel(sequelize,DataTypes);
 const like=likesModel(sequelize,DataTypes);
 const cv = cvModel(sequelize, DataTypes);
+const joinrequest = joinRequestsModel(sequelize,DataTypes);
+const followers = followersModel(sequelize,DataTypes); 
 ///////////////////////////////////////////// Notification Model
 const notification=notificationModel(sequelize,DataTypes)
 notification.belongsTo(user, { foreignKey: "sender_id", as: "sender" });
@@ -89,6 +93,7 @@ jobs.belongsTo(user, { foreignKey: "user_id" });
 user.hasMany(cv, { foreignKey: "user_id" });
 cv.belongsTo(user, { foreignKey: "user_id" });
 
+
 //------------------------------------
 //----------- friend requests mohannad
 friendRequests.belongsTo(user, { foreignKey: "sender_id", as: "sender" });
@@ -107,6 +112,39 @@ user.hasMany(friendRequests, {
 });
 
 //----------- friend requests mohannad
+//------------------------------------
+
+
+//------------------------------------
+//----------- join requests Aljamal
+joinrequest.belongsTo(user, { foreignKey: "sender_id", as: "sender" });
+user.hasMany(joinrequest, {
+  foreignKey: "sender_id",
+  as: "sentJoinrequest",
+});
+
+joinrequest.belongsTo(user, {
+  foreignKey: "receiver_id",
+  as: "receiver",
+});
+user.hasMany(joinrequest, {
+  foreignKey: "receiver_id",
+  as: "receivedJoinrequest",
+});
+
+//----------- join requests Aljamal
+//------------------------------------
+
+
+//------------------------------------
+//----------- followers Aljamal
+followers.belongsTo(user, { foreignKey: "sender_id", as: "sender" });
+user.hasMany(followers, { foreignKey: "sender_id", as: "make the follow", });
+
+followers.belongsTo(user, {foreignKey: "receiver_id", as: "receiver",});
+user.hasMany(followers, {foreignKey: "receiver_id", as: "received the follow", });
+
+//----------- followers Aljamal
 //------------------------------------
 
 
@@ -145,4 +183,6 @@ module.exports = {
   notificationModel:notification,
   chat: chat,
   cv: new Collection(cv),
+  joinRequests: joinrequest,
+  followers: followers,
 };

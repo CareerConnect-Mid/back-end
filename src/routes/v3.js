@@ -42,6 +42,9 @@ router2.delete(
   handleDelete
 );
 
+
+
+
 async function handleGetAll(req, res) {
   let allRecords = await jobs.get();
   res.status(200).json(allRecords);

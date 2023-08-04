@@ -380,6 +380,91 @@ async function viewMessages(req, res) {
 //------------------------------------------------------
 
 
+//------------------------------------------------------
+//----------------------- applying jobs aljamal
+router.post("/applyjob/:id", bearerAuth, applyJob);
+async function applyJob(req, res, next) {
+  try {
+
+      // check if the users exist
+    const receiverid = req.params.id;
+    const receiver = await jobs.get(receiverid);
+    console.log(receiver);
+    if(req.user.role !== 'company' && receiver.dataValues.role == 'company'){
+
+      // check if the users exist
+    const senderid = req.user.dataValues.id; //from tocken
+    const sender = await users.get(senderid);
+
+    if (!sender || !receiver) {
+      return res.status(404).json("User not found.");
+    }
+    // check if the request is already sent so that it doesnet dublicate
+    const existingRequest = await followers.findOne({
+      where: {
+        sender_id: senderid,
+        receiver_id: receiverid
+      },
+    });
+
+    if (existingRequest) {
+      return res.status(400).json(`You are already follow ${receiver.dataValues.username} company`);
+    }
+
+    // create the new Join request
+    // Create a new Join request entry in the JoinRequest table
+    await followers.create({
+      sender_id: senderid,
+      receiver_id: receiverid
+    });
+
+    return res
+      .status(200)
+      .json(`You are now following ${receiver.dataValues.username} company.`);
+    } 
+    else 
+    {
+      return res
+      .status(200)
+      .json("you don't have Permission");
+    }
+  } catch (error) {
+    next("an error occured, the Join request failed");
+  }
+}
+/*------------------*/
+router.get("/followers", bearerAuth, viewFollowers);
+async function viewFollowers(req, res, next) {
+  try {
+    if(req.user.dataValues.role == 'company'){
+      const receiverid = req.user.dataValues.id; //from tocken
+
+      const receivedFollowers = await followers.findAll({
+        where: { receiver_id: receiverid },
+      });
+  
+      if (receivedFollowers.length === 0) {
+        return res.status(404).json("there is no followersto your company yet");
+      }
+
+      return res.status(200).json(receivedFollowers);
+    } else {
+      return res
+      .status(200)
+      .json("you don't have Permission");
+    }
+    } catch (error) {
+      console.error("Error retrieving received friend requests:", error);
+      return res.status(500).json({
+        message: "An error occurred while retrieving received friend requests.",
+      });
+    
+    }
+}
+//------------------------applying jobs aljamal
+//------------------------------------------------------
+
+
 router.param("model", (req, res, next) => {
   const modelName = req.params.model;
   if (dataModules[modelName]) {

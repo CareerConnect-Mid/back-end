@@ -15,6 +15,7 @@ const {
   friendRequestsModel,
 } = require("./friendrequests/FriendRequest.model.js");
 const notificationModel=require('./notification/model.js')
+const FriendsModel = require("./friends/model.js"); 
 
 
 const POSTGRESS_URI =
@@ -114,7 +115,11 @@ user.hasMany(friendRequests, {
 //----------- friend requests mohannad
 //------------------------------------
 
-
+/////// friends model motasem
+const friends = FriendsModel(sequelize, DataTypes); // Create the Friends model instance
+user.belongsToMany(user, { through: friends, as: "friends", foreignKey: "user_id" });
+user.belongsToMany(user, { through: friends, as: "user", foreignKey: "friend_id" });
+////// friends model motasem
 //------------------------------------
 //----------- join requests Aljamal
 joinrequest.belongsTo(user, { foreignKey: "sender_id", as: "sender" });
@@ -185,4 +190,7 @@ module.exports = {
   cv: new Collection(cv),
   joinRequests: joinrequest,
   followers: followers,
+  postsModel:posts,
+  user:user,
+  friends: friends,
 };

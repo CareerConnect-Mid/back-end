@@ -339,10 +339,10 @@ async function handleFriendRequest(req, res) {
 
     // Save the updated status in the database
     await joinRequest.save();
-    await employees.create({
-      company_id: userId,
-      employee_id: senderid,
-    });
+    // await employees.create({
+    //   company_id: userId,
+    //   employee_id: senderid,
+    // });
 
     await userModel.update(
       { employed: true },
@@ -761,6 +761,27 @@ async function handleCreateCV(req, res) {
     res.status(200).json("you dont have Permission to make cv");
   }
 }
+async function handleGetCVbyTitle(req, res) {
+  if (req.user.role != "user" || req.params.id == req.user.id) {
+    const title = req.params.title;
+    let theRecord = await cv.getCVbyTitle(title);
+    res.status(200).json(theRecord.cv_link);
+  } else {
+    res.status(200).json("you dont have Permission");
+  }
+}
+
+async function handleGetCVbyTitleAndField(req, res) {
+  if (req.user.role != "user" || req.params.id == req.user.id) {
+    const title = req.params.title;
+    const field = req.params.field;
+    let allRecords = await cv.getCVbyTitleAndField(title, field);
+    const list = allRecords.map((cv) => cv.cv_link);
+    res.status(200).json(list);
+  } else {
+    res.status(200).json("you dont have Permission");
+  }
+}
 router.post("/add-to-favorites/:postId", bearerAuth, addToFavorites);
 
 async function addToFavorites(req, res) {
@@ -790,15 +811,7 @@ async function addToFavorites(req, res) {
       user_id: userId,
       post_id: postId,
     });
-async function handleGetCVbyTitle(req, res) {
-  if (req.user.role != "user" || req.params.id == req.user.id) {
-    const title = req.params.title;
-    let theRecord = await cv.getCVbyTitle(title);
-    res.status(200).json(theRecord.cv_link);
-  } else {
-    res.status(200).json("you dont have Permission");
-  }
-}
+
 
     return res.status(200).json({ message: "Post added to favorites." });
   } catch (error) {
@@ -824,22 +837,15 @@ async function getFavoritePosts(req, res) {
       where: { user_id: userId },
       include: [{ model: posts }],
     });
-async function handleGetCVbyTitleAndField(req, res) {
-  if (req.user.role != "user" || req.params.id == req.user.id) {
-    const title = req.params.title;
-    const field = req.params.field;
-    let allRecords = await cv.getCVbyTitleAndField(title, field);
-    const list = allRecords.map((cv) => cv.cv_link);
-    res.status(200).json(list);
-  } else {
-    res.status(200).json("you dont have Permission");
-  }
-}
 
     res.status(200).json(favoritePosts);
   } catch (error) {
     console.error("Error fetching favorite posts:", error);
     res.status(500).json({ message: "Internal server error." });
   }
+
 }
+
+
+
 module.exports = router;

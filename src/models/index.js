@@ -72,6 +72,9 @@ const friendRequests = friendRequestsModel(sequelize, DataTypes);
 user.hasMany(like,{foreignKey:"user_id"});
 like.belongsTo(user,{foreignKey:"user_id"})
 
+user.hasMany(joblikes,{foreignKey:"user_id"});
+joblikes.belongsTo(user,{foreignKey:"user_id"})
+
 posts.hasMany(like,{foreignKey:"post_id"});
 like.belongsTo(posts,{foreignKey:"post_id"})
 

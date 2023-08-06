@@ -10,6 +10,7 @@ const { where } = require("sequelize");
 const dataModules = { jobs };
 const router2 = express.Router();
 
+const likes = require("../models/likes/model01");
 
 
 
@@ -29,7 +30,7 @@ router2.get("/jobtitle/:title", bearerAuth, handleGetTitle);
 router2.get("/jobcity/:title", bearerAuth, handleGetCIty);
 router2.post("/jobs", bearerAuth, permissions(), handleCreate);
 router2.get("/jobs/:id/jobcomments", bearerAuth, jobComments);
-router2.post("/joblikes", bearerAuth,handleCreateLikes);
+router2.post("/likes", bearerAuth,handleCreateLikes);
 router2.get("/likes", bearerAuth, handleGetAll);
 router2.put(
   "/:model/:id",
@@ -77,8 +78,15 @@ async function handleCreateLikes(req, res) {
   let obj = req.body;
   let userId=req.user.id;
   obj.user_id=userId
-  let newRecord = await joblike.create(obj);
-  res.status(201).json(newRecord);
+  let checkPost= await joblike.checkJobPostId(obj["job_id"])
+  if(checkPost){
+    res.status(201).json(" you/'ve liked this post");
+
+  }else{
+
+    let newRecord = await joblike.create(obj);
+    res.status(201).json(newRecord);
+  }
 
 }
 

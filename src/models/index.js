@@ -16,6 +16,7 @@ const {
 } = require("./friendrequests/FriendRequest.model.js");
 const notificationModel = require("./notification/model.js");
 const FriendsModel = require("./friends/model.js");
+const employeesModel = require("./employees/employees.model.js");
 
 const POSTGRESS_URI =
   process.env.NODE_ENV === "test"
@@ -142,6 +143,31 @@ user.hasMany(joinrequest, {
   as: "receivedJoinrequest",
 });
 
+// const employees = employeesModel(sequelize, DataTypes);
+// // user.hasMany(employees, {
+// //   foreignKey: "company_id",
+// //   as: "employees",
+// // });
+
+// // // Associate users with employees as an employee's company
+// // user.belongsTo(employees, {
+// //   foreignKey: "employee_id",
+// //   as: "company",
+// // });
+// user.belongsToMany(user, {
+//   through: employees,
+//   as: "companyEmployees",
+//   foreignKey: "company_id",
+//   otherKey: "employee_id",
+// });
+
+// // Also, add the inverse association if needed (Many-to-Many)
+// user.belongsToMany(user, {
+//   through: employees,
+//   as: "company",
+//   foreignKey: "employee_id",
+//   otherKey: "company_id",
+// });
 //----------- join requests Aljamal
 //------------------------------------
 

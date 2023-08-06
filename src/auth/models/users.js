@@ -27,6 +27,7 @@ const userModel = (sequelize, DataTypes) => {
     imageForCover: { type: DataTypes.STRING },
     career: { type: DataTypes.STRING },
     bio: { type: DataTypes.STRING },
+    employed: { type: DataTypes.BOOLEAN, defaultValue: false },
     token: {
       type: DataTypes.VIRTUAL,
       get() {
@@ -41,7 +42,16 @@ const userModel = (sequelize, DataTypes) => {
       type: DataTypes.VIRTUAL,
       get() {
         const acl = {
-          company: ["read", "create", "update", "delete","read job","create job","update job","delete job"],
+          company: [
+            "read",
+            "create",
+            "update",
+            "delete",
+            "read job",
+            "create job",
+            "update job",
+            "delete job",
+          ],
           superadmin: ["read", "create", "update", "delete"],
           user: ["read", "create", "update", "delete"],
         };
@@ -94,7 +104,6 @@ const userModel = (sequelize, DataTypes) => {
       await user.save();
 
       return true;
-
     } catch (e) {
       throw new Error(e.message);
     }

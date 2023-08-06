@@ -13,7 +13,7 @@ const userupdate = require("../auth/middleware/adminupdate");
 const { Op } = require("sequelize");
 const { OPEN_PRIVATECACHE } = require("sqlite3");
 const {
-  user,
+  userModel,
   users,
   posts,
   postsModel,
@@ -25,11 +25,11 @@ const {
   friends,
   notification,
   notificationModel,
-  // notification2,
   chat,
   cv,
   joinRequests,
   followers,
+  employees,
 } = require("../models/index");
 
 const router = express.Router();
@@ -41,9 +41,20 @@ function welcomeHandler(req, res) {
 
 ////////////////////////////// Notification model
 router.get("/usernotification", bearerAuth, userNotifications);
+
+async function userNotifications(req, res) {
+  const userId = req.user.id;
+
+  let notifications = await notificationModel.findAll({
+    where: {
+      receiver_id: userId,
+    },
+  });
+
+  res.status(200).json(notifications);
+}
+
 ///////////////////////////// Notification model
-router.get("/usernotification", bearerAuth, userNotifications);
-///////////////////////////// Notification
 
 ///////////////////////////////////////////////////////////////////////// private and public posts motasem
 router.get("/showposts", bearerAuth, handleShowPosts);
@@ -94,15 +105,49 @@ async function sendFriendRequest(req, res) {
   const userId = req.user.id;
   const friendId = req.params.id;
   try {
-    const existingRequest = await friendRequests.findOne({
+    const user = await userModel.findByPk(userId);
+    if (user.role === "company") {
+      return res
+        .status(400)
+        .json({ message: "Companies cannot send friend requests." });
+    }
+
+    // Check if the user you are sending the request to is a company
+    const friendUser = await userModel.findByPk(friendId);
+    if (friendUser.role === "company") {
+      return res
+        .status(400)
+        .json({ message: "You cannot send friend requests to companies." });
+    }
+
+    const existingRequestFromSender = await friendRequests.findOne({
       where: {
         sender_id: userId,
         receiver_id: friendId,
       },
     });
 
-    if (existingRequest) {
-      return res.status(400).json({ message: "Friend request already sent." });
+    // Check if there is an existing friend request from receiver to sender
+    const existingRequestFromReceiver = await friendRequests.findOne({
+      where: {
+        sender_id: friendId,
+        receiver_id: userId,
+      },
+    });
+    const areFriends = await friends.findOne({
+      where: {
+        user_id: userId,
+        friend_id: friendId,
+      },
+    });
+    if (areFriends) {
+      return res.status(400).json({
+        message: "you are already friends",
+      });
+    } else if (existingRequestFromSender || existingRequestFromReceiver) {
+      return res.status(400).json({
+        message: "there is a pending friend request between both of you",
+      });
     }
     // Create a new friend request
     await friendRequests.create({ sender_id: userId, receiver_id: friendId });
@@ -117,58 +162,15 @@ async function sendFriendRequest(req, res) {
   }
 }
 
-/*------------------*/
-router.post("/accept-friend-request/:id", bearerAuth, acceptFriendRequest);
-
-async function acceptFriendRequest(req, res) {
-  const userId = req.user.id;
-  const friendId = req.params.id;
-  try {
-    // Check if the friend request exists and is pending
-    const friendRequest = await friendRequests.findOne({
-      where: {
-        sender_id: friendId, // Check if the sender_id matches the friendId (the sender of the request)
-        receiver_id: userId,
-        status: "pending",
-      },
-    });
-    if (!friendRequest) {
-      return res
-        .status(404)
-        .json({ message: "Friend request not found or already accepted." });
-    }
-    // Update the friend request status to "accepted"
-    friendRequest.status = "accepted";
-    await friendRequest.save();
-
-    // Create entries in the Friends table for both users
-    await friends.create({ user_id: userId, friend_id: friendId });
-    await friends.create({ user_id: friendId, friend_id: userId });
-
-    return res
-      .status(200)
-      .json({ message: "Friend request accepted successfully." });
-  } catch (error) {
-    console.error("Error accepting friend request:", error);
-    res
-      .status(500)
-      .json({ message: "An error occurred while accepting friend request." });
-  }
-}
-/*------------------*/
-///// friends routes motasem
-
 router.get("/friends", bearerAuth, Friends);
-async function Friends(req,res){
-const friendsReq=await friends.findAll()
-res.status(200).json(friendsReq)
-
+async function Friends(req, res) {
+  const friendsReq = await friends.findAll();
+  res.status(200).json(friendsReq);
 }
 router.get("/friendsreq", bearerAuth, Friendsreq);
-async function Friendsreq(req,res){
-const friendsReq=await friendRequests.findAll()
-res.status(200).json(friendsReq)
-
+async function Friendsreq(req, res) {
+  const friendsReq = await friendRequests.findAll();
+  res.status(200).json(friendsReq);
 }
 router.get("/my-friends", bearerAuth, getFriendsWithNames);
 
@@ -184,32 +186,184 @@ async function getFriendsWithNames(req, res) {
       },
     });
 
-    const friendIds = friendRequestsReceived.map(request => request.sender_id);
+    const friendIds = friendRequestsReceived.map(
+      (request) => request.sender_id
+    );
 
     // 2. Fetch the friend users' records including their names
-    const friendsWithNames = await user.findAll({
+    const friendsWithNames = await userModel.findAll({
       where: {
         id: { [Op.in]: friendIds },
       },
-      attributes: ["id", "username"], 
+      attributes: ["id", "username"],
     });
 
     res.status(200).json(friendsWithNames);
   } catch (error) {
     console.error("Error fetching friends with names:", error);
-    res.status(500).json({ message: "An error occurred while fetching friends with names." });
+    res.status(500).json({
+      message: "An error occurred while fetching friends with names.",
+    });
   }
 }
 //////////////////////////////////////////////////////////////////////////////////////// friends routes motasem
-// router.post("/handle-friend-request/:id", bearerAuth, handleFriendRequest);
 
-// async function handleFriendRequest(req, res) {}
+// /*------------------*/
+
+router.get("/myfriends", bearerAuth, getFriends);
+
+async function getFriends(req, res) {
+  try {
+    const userId = req.user.dataValues.id; // Get the user ID from the authenticated user's token
+
+    // Find the user by ID and include their friends using the "friends" association
+    const user = await userModel.findByPk(userId, {
+      include: [
+        {
+          association: "friends",
+          attributes: [
+            "id",
+            "username",
+            "firstName",
+            "lastName",
+            "profilePicture",
+          ],
+        },
+      ],
+    });
+
+    // Extract only the friends from the user object
+    const friends = user.friends;
+
+    return res.status(200).json(friends);
+  } catch (error) {
+    console.error("Error retrieving friends:", error);
+    return res
+      .status(500)
+      .json({ message: "An error occurred while retrieving friends." });
+  }
+}
+
+// /*------------------*/
+router.get("/received-friend-requests", bearerAuth, viewFriendRequests);
+async function viewFriendRequests(req, res) {
+  try {
+    const receiverid = req.user.dataValues.id; //from tocken
+
+    const receivedFriendRequests = await friendRequests.findAll({
+      where: {
+        receiver_id: receiverid,
+        status: "pending", // Filter by status: "pending"
+      },
+    });
+
+    if (receivedFriendRequests.length === 0) {
+      return res.status(404).json({
+        message: "No pendin friend requests .",
+      });
+    }
+    return res.status(200).json(receivedFriendRequests);
+  } catch (error) {
+    console.error("Error retrieving received friend requests:", error);
+    return res.status(500).json({
+      message: "An error occurred while retrieving received friend requests.",
+    });
+  }
+}
+// /*------------------*/
+
+router.post("/handle-friend-request/:id", bearerAuth, handleFriendRequest);
+
+async function handleFriendRequest(req, res) {
+  const userId = req.user.id;
+  const senderid = req.params.id;
+  const { action } = req.body;
+
+  const friendRequest = await friendRequests.findOne({
+    where: {
+      sender_id: senderid,
+    },
+  });
+  if (!friendRequest) {
+    return res.status(404).json({ message: "Friend request not found." });
+  }
+
+  if (action === "accept") {
+    friendRequest.status = "accepted";
+
+    // Save the updated status in the database
+    await friendRequest.save();
+
+    // Create friendship records
+
+    await friends.create({ user_id: userId, friend_id: senderid });
+    await friends.create({ user_id: senderid, friend_id: userId });
+  } else if (action === "decline") {
+    friendRequest.status = "declined";
+    // Remove the friend request record from the database
+    await friendRequest.destroy();
+  } else {
+    return res.status(400).json({ message: "Invalid action." });
+  }
+
+  return res.status(200).json({
+    message: `Friend request is ${friendRequest.status} successfully.`,
+  });
+}
 
 //------------------------friend requests routes mohannad
 //------------------------------------------------------
 
 //------------------------------------------------------
 //-----------------------JOIN requests routes aljamal
+router.post("/handle-join-request/:id", bearerAuth, handleFriendRequest);
+
+async function handleFriendRequest(req, res) {
+  const userId = req.user.id;
+  const senderid = req.params.id;
+  const { action } = req.body;
+
+  const joinRequest = await joinRequests.findOne({
+    where: {
+      sender_id: senderid,
+    },
+  });
+  if (!joinRequest) {
+    return res.status(404).json({ message: "Friend request not found." });
+  }
+
+  if (action === "accept") {
+    joinRequest.status = "accepted";
+
+    // Save the updated status in the database
+    await joinRequest.save();
+    await employees.create({
+      company_id: userId,
+      employee_id: senderid,
+    });
+
+    await userModel.update(
+      { employed: true },
+      {
+        where: {
+          id: senderid,
+        },
+      }
+    );
+
+    // Create friendship records
+  } else if (action === "decline") {
+    joinRequest.status = "declined";
+    // Remove the friend request record from the database
+    await joinRequest.destroy();
+  } else {
+    return res.status(400).json({ message: "Invalid action." });
+  }
+
+  return res.status(200).json({
+    message: `join request is ${joinRequest.status} successfully.`,
+  });
+}
 
 router.post("/send-join-request/:id", bearerAuth, SendJoinRequest);
 async function SendJoinRequest(req, res, next) {
@@ -281,6 +435,44 @@ async function viewJoinRequests(req, res, next) {
     });
   }
 }
+
+// router.get("/company/employees", bearerAuth, getCompanyEmployees);
+// async function getCompanyEmployees(req, res) {
+//   try {
+//     const companyId = req.user.id; // Assuming the user ID represents the company ID
+
+//     // Find the employees of the company using the "employees" model and include user details
+//     const companyEmployees = await employees.findAll({
+//       where: {
+//         company_id: companyId,
+//       },
+//       include: [
+//         {
+//           model: userModel,
+//           as: "employee",
+//           attributes: [
+//             "id",
+//             "username",
+//             "firstName",
+//             "lastName",
+//             "profilePicture",
+//           ],
+//         },
+//       ],
+//     });
+
+//     // Extract only the employee details from the companyEmployees array
+//     // const employeesDetails = companyEmployees.map(
+//     //   (employee) => employee.employee
+//     // );
+
+//     return res.status(200).json(companyEmployees);
+//   } catch (error) {
+//     console.error("Error getting company employees:", error);
+//     return res.status(500).json({ message: "Server error." });
+//   }
+// }
+
 //------------------------JOIN requests routes aljamal
 //------------------------------------------------------
 
@@ -366,7 +558,7 @@ async function viewFollowers(req, res, next) {
 
 //------------------------------------------------------
 //----------------------- Chat aljamal
-router.post("/sendMessage/:id", bearerAuth, SendMessage, viewMessages);
+router.post("/sendMessage/:id", bearerAuth, SendMessage);
 async function SendMessage(req, res, next) {
   try {
     // check if the users exist
@@ -389,10 +581,7 @@ async function SendMessage(req, res, next) {
       sender_name: sendername,
     });
 
-    next();
-    // return res
-    //   .status(200).json(viewMessages);
-    //   // .json({ message: "the message sent successfully."});
+    return res.status(200).json({ message: "the message sent successfully." });
   } catch (error) {
     next("an error occured, the sent message failed");
   }
@@ -454,28 +643,19 @@ router.get("/:model", bearerAuth, handleGetAll);
 router.get("/:model/:id", bearerAuth, handleGetOne);
 router.post("/:model", bearerAuth, handleCreate);
 router.post("/:model", bearerAuth, handleCreateLikes);
+// router.put("/:model/:id", bearerAuth, checkId, handleUpdate);
 router.put("/:model/:id", bearerAuth, userupdate, handleUpdate);
 router.delete("/:model/:id", bearerAuth, checkId, handleDelete);
 
+router.get("/jobs/:id/jobcomments", bearerAuth, jobComments);
 router.get("/posts/:id/comments", bearerAuth, postComments);
 router.get("/posts/:id/likes", bearerAuth, postLikes);
 
-//////////////////////////////////////// Notification Model
-async function userNotifications(req, res) {
-  const token = req.headers.authorization.split(" ").pop();
-
-  const parsedToken = jwt.verify(token, SECRET);
-
-  let notifications = await notificationModel.findAll({
-    where: {
-      receiver_id: parsedToken.id,
-    },
-  });
-
-  res.status(200).json(notifications);
+async function jobComments(req, res) {
+  const jobId = parseInt(req.params.id);
+  let jcomments = await jobs.getUserPosts(jobId, jobcomments.model);
+  res.status(200).json(jcomments);
 }
-
-//////////////////////////////////////// Notification Model
 
 async function postComments(req, res) {
   const postId = parseInt(req.params.id);

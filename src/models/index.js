@@ -6,17 +6,17 @@ const commentsModel = require("./comments/model.js");
 const userModel = require("../../src/auth/models/users.js");
 const JobsModel = require("./jobs/model");
 const jobComments = require("./jobcomments/model.js");
-const likesModel= require('./likes/model.js');
-const chatModel= require('./chat/model.js');
+const likesModel = require("./likes/model.js");
+const chatModel = require("./chat/model.js");
 const cvModel = require("./cv/cv.js");
 const joinRequestsModel = require("./joinRequests/joinRequest.model.js");
-const followersModel = require("./followers/followers.js")
+const followersModel = require("./followers/followers.js");
 const {
   friendRequestsModel,
 } = require("./friendrequests/FriendRequest.model.js");
-const notificationModel=require('./notification/model.js')
-const FriendsModel = require("./friends/model.js"); 
-
+const notificationModel = require("./notification/model.js");
+const FriendsModel = require("./friends/model.js");
+const employeesModel = require("./employees/employees.model.js");
 
 const POSTGRESS_URI =
   process.env.NODE_ENV === "test"
@@ -40,13 +40,13 @@ const posts = postsModel(sequelize, DataTypes);
 const jobcomments = jobComments(sequelize, DataTypes);
 const comment = commentsModel(sequelize, DataTypes);
 const jobs = JobsModel(sequelize, DataTypes);
-const user=userModel(sequelize,DataTypes);
-const like=likesModel(sequelize,DataTypes);
+const user = userModel(sequelize, DataTypes);
+const like = likesModel(sequelize, DataTypes);
 const cv = cvModel(sequelize, DataTypes);
-const joinrequest = joinRequestsModel(sequelize,DataTypes);
-const followers = followersModel(sequelize,DataTypes); 
+const joinrequest = joinRequestsModel(sequelize, DataTypes);
+const followers = followersModel(sequelize, DataTypes);
 ///////////////////////////////////////////// Notification Model
-const notification=notificationModel(sequelize,DataTypes)
+const notification = notificationModel(sequelize, DataTypes);
 notification.belongsTo(user, { foreignKey: "sender_id", as: "sender" });
 user.hasMany(notification, {
   foreignKey: "sender_id",
@@ -69,15 +69,14 @@ jobcomments.hasMany(notification, { foreignKey: "job_comment_id" });
 notification.belongsTo(comment, { foreignKey: "comment_id" });
 comment.hasMany(notification, { foreignKey: "comment_id" });
 //////////////////////////////////////////// Notification Model
-const chat=chatModel(sequelize,DataTypes)
+const chat = chatModel(sequelize, DataTypes);
 const friendRequests = friendRequestsModel(sequelize, DataTypes);
 
-user.hasMany(like,{foreignKey:"user_id"});
-like.belongsTo(user,{foreignKey:"user_id"})
+user.hasMany(like, { foreignKey: "user_id" });
+like.belongsTo(user, { foreignKey: "user_id" });
 
-posts.hasMany(like,{foreignKey:"post_id"});
-like.belongsTo(posts,{foreignKey:"post_id"})
-
+posts.hasMany(like, { foreignKey: "post_id" });
+like.belongsTo(posts, { foreignKey: "post_id" });
 
 user.hasMany(posts, { foreignKey: "user_id" });
 posts.belongsTo(user, { foreignKey: "user_id" });
@@ -93,7 +92,6 @@ jobs.belongsTo(user, { foreignKey: "user_id" });
 
 user.hasMany(cv, { foreignKey: "user_id" });
 cv.belongsTo(user, { foreignKey: "user_id" });
-
 
 //------------------------------------
 //----------- friend requests mohannad
@@ -117,8 +115,16 @@ user.hasMany(friendRequests, {
 
 /////// friends model motasem
 const friends = FriendsModel(sequelize, DataTypes); // Create the Friends model instance
-user.belongsToMany(user, { through: friends, as: "friends", foreignKey: "user_id" });
-user.belongsToMany(user, { through: friends, as: "user", foreignKey: "friend_id" });
+user.belongsToMany(user, {
+  through: friends,
+  as: "friends",
+  foreignKey: "user_id",
+});
+user.belongsToMany(user, {
+  through: friends,
+  as: "user",
+  foreignKey: "friend_id",
+});
 ////// friends model motasem
 //------------------------------------
 //----------- join requests Aljamal
@@ -137,21 +143,47 @@ user.hasMany(joinrequest, {
   as: "receivedJoinrequest",
 });
 
+// const employees = employeesModel(sequelize, DataTypes);
+// // user.hasMany(employees, {
+// //   foreignKey: "company_id",
+// //   as: "employees",
+// // });
+
+// // // Associate users with employees as an employee's company
+// // user.belongsTo(employees, {
+// //   foreignKey: "employee_id",
+// //   as: "company",
+// // });
+// user.belongsToMany(user, {
+//   through: employees,
+//   as: "companyEmployees",
+//   foreignKey: "company_id",
+//   otherKey: "employee_id",
+// });
+
+// // Also, add the inverse association if needed (Many-to-Many)
+// user.belongsToMany(user, {
+//   through: employees,
+//   as: "company",
+//   foreignKey: "employee_id",
+//   otherKey: "company_id",
+// });
 //----------- join requests Aljamal
 //------------------------------------
-
 
 //------------------------------------
 //----------- followers Aljamal
 followers.belongsTo(user, { foreignKey: "sender_id", as: "sender" });
-user.hasMany(followers, { foreignKey: "sender_id", as: "make the follow", });
+user.hasMany(followers, { foreignKey: "sender_id", as: "make the follow" });
 
-followers.belongsTo(user, {foreignKey: "receiver_id", as: "receiver",});
-user.hasMany(followers, {foreignKey: "receiver_id", as: "received the follow", });
+followers.belongsTo(user, { foreignKey: "receiver_id", as: "receiver" });
+user.hasMany(followers, {
+  foreignKey: "receiver_id",
+  as: "received the follow",
+});
 
 //----------- followers Aljamal
 //------------------------------------
-
 
 //------------------------------------
 //----------- chat aljamal
@@ -173,7 +205,6 @@ user.hasMany(chat, {
 //----------- chat aljamal
 //------------------------------------
 
-
 module.exports = {
   db: sequelize,
   posts: new Collection(posts),
@@ -184,13 +215,13 @@ module.exports = {
   userModel: user,
   likes: new Collection(like),
   friendRequests: friendRequests,
-  notification:new Collection(notification),
-  notificationModel:notification,
+  notification: new Collection(notification),
+  notificationModel: notification,
   chat: chat,
   cv: new Collection(cv),
   joinRequests: joinrequest,
   followers: followers,
-  postsModel:posts,
-  user:user,
+  postsModel: posts,
+  user: user,
   friends: friends,
 };

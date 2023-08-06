@@ -10,7 +10,8 @@ const likesModel= require('./likes/model.js');
 const chatModel= require('./chat/model.js');
 const cvModel = require("./cv/cv.js");
 const joinRequestsModel = require("./joinRequests/joinRequest.model.js");
-const followersModel = require("./followers/followers.js")
+const followersModel = require("./followers/followers.js");
+const applyJobModel = require("./applyJob/applyJob.js")
 const {
   friendRequestsModel,
 } = require("./friendrequests/FriendRequest.model.js");
@@ -45,6 +46,7 @@ const like=likesModel(sequelize,DataTypes);
 const cv = cvModel(sequelize, DataTypes);
 const joinrequest = joinRequestsModel(sequelize,DataTypes);
 const followers = followersModel(sequelize,DataTypes); 
+const applyjob = applyJobModel(sequelize,DataTypes);
 ///////////////////////////////////////////// Notification Model
 const notification=notificationModel(sequelize,DataTypes)
 notification.belongsTo(user, { foreignKey: "sender_id", as: "sender" });
@@ -91,7 +93,7 @@ comment.belongsTo(posts, { foreignKey: "post_id" });
 user.hasMany(jobs, { foreignKey: "user_id" });
 jobs.belongsTo(user, { foreignKey: "user_id" });
 
-user.hasMany(cv, { foreignKey: "user_id" });
+user.hasOne(cv, { foreignKey: "user_id" });
 cv.belongsTo(user, { foreignKey: "user_id" });
 
 
@@ -122,24 +124,25 @@ user.belongsToMany(user, { through: friends, as: "user", foreignKey: "friend_id"
 ////// friends model motasem
 //------------------------------------
 //----------- join requests Aljamal
+user.hasMany(joinrequest, { foreignKey: "sender_id", as: "sentJoinrequest" });
 joinrequest.belongsTo(user, { foreignKey: "sender_id", as: "sender" });
-user.hasMany(joinrequest, {
-  foreignKey: "sender_id",
-  as: "sentJoinrequest",
-});
 
-joinrequest.belongsTo(user, {
-  foreignKey: "receiver_id",
-  as: "receiver",
-});
-user.hasMany(joinrequest, {
-  foreignKey: "receiver_id",
-  as: "receivedJoinrequest",
-});
+user.hasMany(joinrequest, { foreignKey: "receiver_id", as: "receivedJoinrequest" });
+joinrequest.belongsTo(user, { foreignKey: "receiver_id", as: "receiver" });
 
 //----------- join requests Aljamal
 //------------------------------------
 
+//------------------------------------
+//----------- applyJob Aljamal
+user.hasMany(applyjob, { foreignKey: "applyer_id"});
+applyjob.belongsTo(user, { foreignKey: "applyer_id"});
+
+jobs.hasMany(applyjob, { foreignKey: "job_id"});
+applyjob.belongsTo(jobs, { foreignKey: "job_id"});
+
+//----------- applyJob Aljamal
+//------------------------------------
 
 //------------------------------------
 //----------- followers Aljamal
@@ -193,4 +196,7 @@ module.exports = {
   postsModel:posts,
   user:user,
   friends: friends,
+  applyjob: applyjob,
+  applyjobCollection: new Collection(applyjob),
+
 };

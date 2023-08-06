@@ -83,6 +83,13 @@ async getCVbyTitleAndField(job_title, job_field,model){
   return record
 }
 
+async getJobApplyer(id, model) {
+  let record = await this.model.findOne({
+      where: { id },
+      include: model,
+  });
+  return record;
+}
 
 
 }

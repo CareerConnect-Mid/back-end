@@ -30,6 +30,7 @@ const {
   cv,
   joinRequests,
   followers,
+  applyjob,
 } = require("../models/index");
 
 const router = express.Router();
@@ -441,40 +442,42 @@ async function applyJob(req, res, next) {
   try {
 
       // check if the users exist
-    const receiverid = req.params.id;
-    const receiver = await jobs.get(receiverid);
-    console.log(receiver);
-    if(req.user.role !== 'company' && receiver.dataValues.role == 'company'){
+    const jobid = req.params.id;
+    const job = await jobs.get(jobid);
+    const companyid = job.dataValues.user_id;
+    const company = await users.get(companyid);
+
+    if(req.user.role !== 'company' && company.dataValues.role == 'company'){  // check the id of the applyer for the job
 
       // check if the users exist
-    const senderid = req.user.dataValues.id; //from tocken
-    const sender = await users.get(senderid);
-
-    if (!sender || !receiver) {
+    const applyerid = req.user.dataValues.id; //from tocken
+    const applyer = await users.get(applyerid);
+      // console.log(applyer.dataValues.)
+    if (!company || !applyer) {
       return res.status(404).json("User not found.");
     }
     // check if the request is already sent so that it doesnet dublicate
-    const existingRequest = await followers.findOne({
+    const existingApply = await applyjob.findOne({       
       where: {
-        sender_id: senderid,
-        receiver_id: receiverid
+        job_id: jobid,
+        applyer_id: applyerid
       },
     });
 
-    if (existingRequest) {
-      return res.status(400).json(`You are already follow ${receiver.dataValues.username} company`);
+    if (existingApply) {
+      return res.status(400).json("You are already apply to this job");
     }
 
     // create the new Join request
     // Create a new Join request entry in the JoinRequest table
-    await followers.create({
-      sender_id: senderid,
-      receiver_id: receiverid
+    await applyjob.create({
+      job_id: jobid,
+      applyer_id: applyerid
     });
 
     return res
       .status(200)
-      .json(`You are now following ${receiver.dataValues.username} company.`);
+      .json("You are apply to this job successfully.");
     } 
     else 
     {
@@ -487,34 +490,40 @@ async function applyJob(req, res, next) {
   }
 }
 /*------------------*/
-router.get("/followers", bearerAuth, viewFollowers);
-async function viewFollowers(req, res, next) {
-  try {
-    if(req.user.dataValues.role == 'company'){
-      const receiverid = req.user.dataValues.id; //from tocken
+// router.get("/jobapplyer/:id", bearerAuth, jobapplyer);
+// async function jobapplyer(req, res, next) {
+//   try {
+//     if(req.user.dataValues.role == 'company'){
+//       const companyid = req.user.dataValues.id; //from tocken
 
-      const receivedFollowers = await followers.findAll({
-        where: { receiver_id: receiverid },
-      });
+//       const jobapmplyer = await .findAll({
+//         where: { receiver_id: receiverid },
+//       });
+
+//       let jobapplyer = await applyjob.findAll({
+//         where: 
+//         id: req.params.id ,
+//         include: model,
+//     });
   
-      if (receivedFollowers.length === 0) {
-        return res.status(404).json("there is no followersto your company yet");
-      }
+//       if (receivedFollowers.length === 0) {
+//         return res.status(404).json("there is no applyer to this job");
+//       }
 
-      return res.status(200).json(receivedFollowers);
-    } else {
-      return res
-      .status(200)
-      .json("you don't have Permission");
-    }
-    } catch (error) {
-      console.error("Error retrieving received friend requests:", error);
-      return res.status(500).json({
-        message: "An error occurred while retrieving received friend requests.",
-      });
+//       return res.status(200).json(receivedFollowers);
+//     } else {
+//       return res
+//       .status(200)
+//       .json("you don't have Permission");
+//     }
+//     } catch (error) {
+//       console.error("Error retrieving received friend requests:", error);
+//       return res.status(500).json({
+//         message: "An error occurred while retrieving received friend requests.",
+//       });
     
-    }
-}
+//     }
+// }
 //------------------------applying jobs aljamal
 //------------------------------------------------------
 

@@ -51,6 +51,20 @@ async getJobTitle(job_title,model){
   })
   return record
 }
+async checkJobPostId(job_id,model){
+  let record= await this.model.findOne({
+    where:{job_id},
+    include: model
+  })
+  return record
+}
+async checkPostId(post_id,model){
+  let record= await this.model.findOne({
+    where:{post_id},
+    include: model
+  })
+  return record
+}
 async getJobCity(job_city,model){
   let record= await this.model.findAll({
     where:{job_city},
@@ -83,6 +97,13 @@ async getCVbyTitleAndField(job_title, job_field,model){
   return record
 }
 
+async getJobApplyer(id, model) {
+  let record = await this.model.findOne({
+      where: { id },
+      include: model,
+  });
+  return record;
+}
 
 
 }

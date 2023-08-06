@@ -24,11 +24,14 @@ const {
   likes,
   friends,
   notification,
+  favorites,
+  favorite,
   notificationModel,
   chat,
   cv,
   joinRequests,
   followers,
+  applyjob,
   employees,
 } = require("../models/index");
 
@@ -337,10 +340,10 @@ async function handleJoinRequest(req, res) {
 
     // Save the updated status in the database
     await joinRequest.save();
-    await employees.create({
-      company_id: userId,
-      employee_id: senderid,
-    });
+    // await employees.create({
+    //   company_id: userId,
+    //   employee_id: senderid,
+    // });
 
     await userModel.update(
       { employed: true },
@@ -622,6 +625,68 @@ async function viewMessages(req, res) {
 //------------------------Chat aljamal
 //------------------------------------------------------
 
+
+//------------------------------------------------------
+//----------------------- applying jobs aljamal
+router.post("/applyjob/:id", bearerAuth, applyJob);
+async function applyJob(req, res, next) {
+  try {
+
+      // check if the users exist
+    const jobid = req.params.id;
+    const job = await jobs.get(jobid);
+    const companyid = job.dataValues.user_id;
+    const company = await users.get(companyid);
+
+    if(req.user.role !== 'company' && company.dataValues.role == 'company'){  // check the id of the applyer for the job
+
+      // check if the users exist
+    const applyerid = req.user.dataValues.id; //from tocken
+    const applyer = await users.get(applyerid);
+      // console.log(applyer.dataValues.)
+    if (!company || !applyer) {
+      return res.status(404).json("User not found.");
+    }
+    // check if the request is already sent so that it doesnet dublicate
+    const existingApply = await applyjob.findOne({       
+      where: {
+        job_id: jobid,
+        applyer_id: applyerid
+      },
+    });
+
+    if (existingApply) {
+      return res.status(400).json("You are already apply to this job");
+    }
+
+    // create the new Join request
+    // Create a new Join request entry in the JoinRequest table
+    await applyjob.create({
+      job_id: jobid,
+      applyer_id: applyerid
+    });
+
+    return res
+      .status(200)
+      .json("You are apply to this job successfully.");
+    } 
+    else 
+    {
+      return res
+      .status(200)
+      .json("you don't have Permission");
+    }
+  } catch (error) {
+    next("an error occured, the Join request failed");
+  }
+}
+ 
+
+// the get in v3
+//------------------------applying jobs aljamal
+//------------------------------------------------------
+
+
 router.param("model", (req, res, next) => {
   const modelName = req.params.model;
   if (dataModules[modelName]) {
@@ -641,8 +706,8 @@ router.post("/cv", bearerAuth, handleCreateCV);
 
 router.get("/:model", bearerAuth, handleGetAll);
 router.get("/:model/:id", bearerAuth, handleGetOne);
+router.post("/likes", bearerAuth, handleCreateLikes);
 router.post("/:model", bearerAuth, handleCreate);
-router.post("/:model", bearerAuth, handleCreateLikes);
 // router.put("/:model/:id", bearerAuth, checkId, handleUpdate);
 router.put("/:model/:id", bearerAuth, userupdate, handleUpdate);
 router.delete("/:model/:id", bearerAuth, checkId, handleDelete);
@@ -707,10 +772,18 @@ async function handleCreate(req, res) {
 }
 async function handleCreateLikes(req, res) {
   let obj = req.body;
-  let userId = req.user.id;
-  obj.user_id = userId;
-  let newRecord = await req.model.create(obj);
-  res.status(201).json(newRecord);
+  let userId=req.user.id;
+  obj.user_id=userId
+  let checkPost= await likes.checkPostId(obj["post_id"])
+  if(checkPost){
+    res.status(201).json(" you/'ve liked this post");
+
+  }else{
+
+    let newRecord = await likes.create(obj);
+    res.status(201).json(newRecord);
+  }
+
 }
 
 async function handleUpdate(req, res) {
@@ -759,21 +832,10 @@ async function handleCreateCV(req, res) {
     res.status(200).json("you dont have Permission to make cv");
   }
 }
-
 async function handleGetCVbyTitle(req, res) {
   if (req.user.role != "user" || req.params.id == req.user.id) {
     const title = req.params.title;
     let theRecord = await cv.getCVbyTitle(title);
-    res.status(200).json(theRecord.cv_link);
-  } else {
-    res.status(200).json("you dont have Permission");
-  }
-}
-
-async function handleGetCVbyfield(req, res) {
-  if (req.user.role != "user" || req.params.id == req.user.id) {
-    const field = req.params.field;
-    let theRecord = await cv.getCVbyfield(field);
     res.status(200).json(theRecord.cv_link);
   } else {
     res.status(200).json("you dont have Permission");
@@ -791,5 +853,71 @@ async function handleGetCVbyTitleAndField(req, res) {
     res.status(200).json("you dont have Permission");
   }
 }
+router.post("/add-to-favorites/:postId", bearerAuth, addToFavorites);
+
+async function addToFavorites(req, res) {
+  try {
+    const userId = req.user.id;
+    const postId = req.params.postId;
+
+    // Check if the post and user exist
+    const existingPost = await posts.get(postId);
+    const existingUser = await users.get(userId);
+
+    if (!existingPost || !existingUser) {
+      return res.status(404).json({ message: "Post or user not found." });
+    }
+
+    // Check if the post is already in favorites
+    const existingFavorite = await favorites.findOne({
+      where: { user_id: userId, post_id: postId },
+    });
+
+    if (existingFavorite) {
+      return res.status(400).json({ message: "Post is already in favorites." });
+    }
+
+    // Add the post to favorites
+    await favorites.create({
+      user_id: userId,
+      post_id: postId,
+    });
+
+
+    return res.status(200).json({ message: "Post added to favorites." });
+  } catch (error) {
+    console.error("Error adding post to favorites:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+}
+async function handleGetCVbyfield(req, res) {
+  if (req.user.role != "user" || req.params.id == req.user.id) {
+    const field = req.params.field;
+    let theRecord = await cv.getCVbyfield(field);
+    res.status(200).json(theRecord.cv_link);
+  } else {
+    res.status(200).json("you dont have Permission");
+  }
+}
+
+router.get("/favoriteposts", bearerAuth, getFavoritePosts);
+async function getFavoritePosts(req, res) {
+  try {
+    const userId = req.user.id;
+    const favoritePosts = await favorites.findAll({
+      where: { user_id: userId },
+      include: [{ model: posts }],
+    });
+
+    res.status(200).json(favoritePosts);
+  } catch (error) {
+    console.error("Error fetching favorite posts:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+
+}
+
+
 
 module.exports = router;
+

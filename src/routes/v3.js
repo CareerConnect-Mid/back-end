@@ -1,7 +1,7 @@
 "use strict";
 require("dotenv").config();
 const express = require("express");
-const { jobs,jobcomments,joblike } = require("../models/index");
+const { jobs,jobcomments,joblike,applyjobCollection } = require("../models/index");
 const bearerAuth = require("../auth/middleware/bearer");
 const permissions = require("../auth/middleware/checkrole");
 const checkId = require("../auth/middleware/checkId");
@@ -30,6 +30,7 @@ router2.get("/jobtitle/:title", bearerAuth, handleGetTitle);
 router2.get("/jobcity/:title", bearerAuth, handleGetCIty);
 router2.post("/jobs", bearerAuth, permissions(), handleCreate);
 router2.get("/jobs/:id/jobcomments", bearerAuth, jobComments);
+router2.get("/job/:id/applyer", bearerAuth, jobapplyer);
 router2.post("/likes", bearerAuth,handleCreateLikes);
 router2.get("/likes", bearerAuth, handleGetAll);
 router2.put(
@@ -46,6 +47,9 @@ router2.delete(
   permissions(),
   handleDelete
 );
+
+
+
 
 async function handleGetAll(req, res) {
   let allRecords = await jobs.get();
@@ -124,5 +128,19 @@ async function handleDelete(req, res) {
   let deletedRecord = await req.model.delete(id);
   res.status(200).json(deletedRecord);
 }
+
+async function jobapplyer(req, res) {
+  const jobId = parseInt(req.params.id);
+  const job = await jobs.get(jobId);
+  if(req.user.dataValues.role == 'company' && req.user.dataValues.id == job.user_id){
+      let japplyer = await jobs.getJobApplyer(jobId, applyjobCollection.model);
+      res.status(200).json(japplyer);
+  } else {
+      return res
+      .status(200)
+      .json("you don't have Permission");
+}
+}
+
 
 module.exports = router2;

@@ -7,15 +7,14 @@ const { users } = require("../../src/models/index");
 const basicAuth = require("./middleware/basic.js");
 const bearerAuth = require("./middleware/bearer.js");
 const permissions = require("./middleware/acl.js");
-const {userModel} = require("../models/index");
-
+const { userModel } = require("../models/index");
 
 authRouter.post("/signup", async (req, res, next) => {
   try {
     let userRecord = await users.create(req.body);
     const output = {
-      user: userRecord,
-      token: userRecord.token,
+      user: userRecord.username,
+      role: userRecord.role,
     };
     res.status(201).json(output);
   } catch (e) {
@@ -55,7 +54,7 @@ authRouter.post("/logout", bearerAuth, async (req, res, next) => {
     const validUser = await userModel.authenticateToken(token);
 
     if (!validUser) {
-      return next(new Error("Invalid Login"));
+      return next(new Error("Invalid user"));
     }
 
     validUser.isTokenBlacklisted = true;
@@ -63,9 +62,8 @@ authRouter.post("/logout", bearerAuth, async (req, res, next) => {
 
     res.status(200).json({ message: "Logout successful" });
   } catch (e) {
-    next(e); 
+    next(e);
   }
 });
-
 
 module.exports = authRouter;

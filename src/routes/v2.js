@@ -857,3 +857,4 @@ async function getFavoritePosts(req, res) {
 
 
 module.exports = router;
+

@@ -9,7 +9,7 @@ const jwt = require("jsonwebtoken");
 const SECRET = process.env.SECRET || "secretstring";
 const port = process.env.PORT || 3001;
 const {Sequelize} = require('sequelize');
-
+// const liked= require('../models/likes/model')
 const {
   user,
   users,
@@ -217,7 +217,7 @@ router.post("/cv", bearerAuth,handleCreateCV);
 router.get("/:model", bearerAuth, handleGetAll);
 router.get("/:model/:id", bearerAuth, handleGetOne);
 router.post("/:model", bearerAuth,handleCreate);
-router.post("/:model", bearerAuth,handleCreateLikes);
+// router.post("/:model", bearerAuth,handleCreateLikes);
 router.put(
   "/:model/:id",
   bearerAuth,
@@ -298,16 +298,26 @@ async function handleCreate(req, res) {
   let obj = req.body;
   let userId=req.user.id;
   obj.user_id=userId
+  console.log("========>", req.model)
   let newRecord = await req.model.create(obj);
   res.status(201).json(newRecord);
 }
-async function handleCreateLikes(req, res) {
-  let obj = req.body;
-  let userId=req.user.id;
-  obj.user_id=userId
-  let newRecord = await req.model.create(obj);
-  res.status(201).json(newRecord);
-}
+
+// async function handleCreateLikes(req, res) {
+//   let obj = req.body;
+//   let userId=req.user.id;
+//   obj.user_id=userId
+
+// //  let postedPostId= await liked.findOne({where:{post_id:obj.post_id}})
+// //  console.log("========>", postedPostId)
+//   // if(obj.user_id !== userId ){
+
+//     let newRecord = await req.model.create(obj);
+//     res.status(201).json(newRecord);
+
+//     res.json("you've liked thid post")
+
+// }
 
 async function handleUpdate(req, res) {
   const id = req.params.id;

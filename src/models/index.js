@@ -7,6 +7,7 @@ const userModel = require("../../src/auth/models/users.js");
 const JobsModel = require("./jobs/model");
 const jobComments = require("./jobcomments/model.js");
 const likesModel= require('./likes/model.js');
+const jobLikes= require('./likes/model01.js');
 const chatModel= require('./chat/model.js');
 const cvModel = require("./cv/cv.js");
 const {
@@ -39,6 +40,7 @@ const comment = commentsModel(sequelize, DataTypes);
 const jobs = JobsModel(sequelize, DataTypes);
 const user=userModel(sequelize,DataTypes);
 const like=likesModel(sequelize,DataTypes);
+const joblikes=jobLikes(sequelize,DataTypes);
 const cv = cvModel(sequelize, DataTypes);
 ///////////////////////////////////////////// Notification Model
 const notification=notificationModel(sequelize,DataTypes)
@@ -72,6 +74,9 @@ like.belongsTo(user,{foreignKey:"user_id"})
 
 posts.hasMany(like,{foreignKey:"post_id"});
 like.belongsTo(posts,{foreignKey:"post_id"})
+
+jobs.hasMany(joblikes,{foreignKey:"job_id"});
+joblikes.belongsTo(jobs,{foreignKey:"job_id"})
 
 
 user.hasMany(posts, { foreignKey: "user_id" });
@@ -145,4 +150,5 @@ module.exports = {
   notificationModel:notification,
   chat: chat,
   cv: new Collection(cv),
+  joblike: new Collection(joblikes)
 };

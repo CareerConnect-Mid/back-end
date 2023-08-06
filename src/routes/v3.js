@@ -1,15 +1,18 @@
 "use strict";
 require("dotenv").config();
 const express = require("express");
-const { jobs,jobcomments,applyjobCollection } = require("../models/index");
+const { jobs,jobcomments,joblike,applyjobCollection } = require("../models/index");
 const bearerAuth = require("../auth/middleware/bearer");
 const permissions = require("../auth/middleware/checkrole");
 const checkId = require("../auth/middleware/checkId");
 const jwt = require("jsonwebtoken");
 const { where } = require("sequelize");
 const dataModules = { jobs };
-
 const router2 = express.Router();
+
+const likes = require("../models/likes/model01");
+
+
 
 router2.param("model", (req, res, next) => {
   const modelName = req.params.model;
@@ -28,6 +31,8 @@ router2.get("/jobcity/:title", bearerAuth, handleGetCIty);
 router2.post("/jobs", bearerAuth, permissions(), handleCreate);
 router2.get("/jobs/:id/jobcomments", bearerAuth, jobComments);
 router2.get("/job/:id/applyer", bearerAuth, jobapplyer);
+router2.post("/likes", bearerAuth,handleCreateLikes);
+router2.get("/likes", bearerAuth, handleGetAll);
 router2.put(
   "/:model/:id",
   bearerAuth,
@@ -59,7 +64,7 @@ async function handleGetOne(req, res) {
 async function handleGetTitle(req, res) {
 
   // if(!parseInt(req.params.title)){
-    const title = req.params.title
+    const title = req.params.title.toLowerCase()
 
     let theRecord = await jobs.getJobTitle(title);
     res.status(200).json(theRecord);
@@ -72,6 +77,24 @@ async function handleGetTitle(req, res) {
   //     res.status(200).json(theRecord);
   // }
 }
+
+async function handleCreateLikes(req, res) {
+  let obj = req.body;
+  let userId=req.user.id;
+  obj.user_id=userId
+  let checkPost= await joblike.checkJobPostId(obj["job_id"])
+  if(checkPost){
+    res.status(201).json(" you/'ve liked this post");
+
+  }else{
+
+    let newRecord = await joblike.create(obj);
+    res.status(201).json(newRecord);
+  }
+
+}
+
+
 async function handleGetCIty(req, res) {
 
 
@@ -118,42 +141,6 @@ async function jobapplyer(req, res) {
       .json("you don't have Permission");
 }
 }
-
-
-// async function jobapplyer(req, res) {
-//   try {
-//     if(req.user.dataValues.role == 'company'){
-//       const companyid = req.user.dataValues.id; //from tocken
-
-//       const jobapmplyer = await .findAll({
-//         where: { receiver_id: receiverid },
-//       });
-
-//       let jobapplyer = await applyjob.findAll({
-//         where: 
-//         id: req.params.id ,
-//         include: model,
-//     });
-  
-//       if (receivedFollowers.length === 0) {
-//         return res.status(404).json("there is no applyer to this job");
-//       }
-
-//       return res.status(200).json(receivedFollowers);
-//     } else {
-//       return res
-//       .status(200)
-//       .json("you don't have Permission");
-//     }
-//     } catch (error) {
-//       console.error("Error retrieving received friend requests:", error);
-//       return res.status(500).json({
-//         message: "An error occurred while retrieving received friend requests.",
-//       });
-    
-//     }
-// }
-
 
 
 module.exports = router2;

@@ -643,8 +643,8 @@ router.post("/cv", bearerAuth, handleCreateCV);
 
 router.get("/:model", bearerAuth, handleGetAll);
 router.get("/:model/:id", bearerAuth, handleGetOne);
+router.post("/likes", bearerAuth, handleCreateLikes);
 router.post("/:model", bearerAuth, handleCreate);
-router.post("/:model", bearerAuth, handleCreateLikes);
 // router.put("/:model/:id", bearerAuth, checkId, handleUpdate);
 router.put("/:model/:id", bearerAuth, userupdate, handleUpdate);
 router.delete("/:model/:id", bearerAuth, checkId, handleDelete);
@@ -709,10 +709,18 @@ async function handleCreate(req, res) {
 }
 async function handleCreateLikes(req, res) {
   let obj = req.body;
-  let userId = req.user.id;
-  obj.user_id = userId;
-  let newRecord = await req.model.create(obj);
-  res.status(201).json(newRecord);
+  let userId=req.user.id;
+  obj.user_id=userId
+  let checkPost= await likes.checkPostId(obj["post_id"])
+  if(checkPost){
+    res.status(201).json(" you/'ve liked this post");
+
+  }else{
+
+    let newRecord = await likes.create(obj);
+    res.status(201).json(newRecord);
+  }
+
 }
 
 async function handleUpdate(req, res) {
@@ -849,3 +857,4 @@ async function getFavoritePosts(req, res) {
 
 
 module.exports = router;
+

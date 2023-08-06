@@ -6,8 +6,9 @@ const commentsModel = require("./comments/model.js");
 const userModel = require("../../src/auth/models/users.js");
 const JobsModel = require("./jobs/model");
 const jobComments = require("./jobcomments/model.js");
-const likesModel = require("./likes/model.js");
-const chatModel = require("./chat/model.js");
+const likesModel= require('./likes/model.js');
+const jobLikes= require('./likes/model01.js');
+const chatModel= require('./chat/model.js');
 const cvModel = require("./cv/cv.js");
 const joinRequestsModel = require("./joinRequests/joinRequest.model.js");
 const followersModel = require("./followers/followers.js");
@@ -41,8 +42,9 @@ const posts = postsModel(sequelize, DataTypes);
 const jobcomments = jobComments(sequelize, DataTypes);
 const comment = commentsModel(sequelize, DataTypes);
 const jobs = JobsModel(sequelize, DataTypes);
-const user = userModel(sequelize, DataTypes);;
-const like = likesModel(sequelize, DataTypes);
+const user=userModel(sequelize,DataTypes);
+const like=likesModel(sequelize,DataTypes);
+const joblike=jobLikes(sequelize,DataTypes);
 const cv = cvModel(sequelize, DataTypes);
 const joinrequest = joinRequestsModel(sequelize, DataTypes);
 const followers = followersModel(sequelize, DataTypes);
@@ -74,11 +76,18 @@ comment.hasMany(notification, { foreignKey: "comment_id" });
 const chat = chatModel(sequelize, DataTypes);
 const friendRequests = friendRequestsModel(sequelize, DataTypes);
 
-user.hasMany(like, { foreignKey: "user_id" });
-like.belongsTo(user, { foreignKey: "user_id" });
+user.hasMany(like,{foreignKey:"user_id"});
+like.belongsTo(user,{foreignKey:"user_id"})
 
-posts.hasMany(like, { foreignKey: "post_id" });
-like.belongsTo(posts, { foreignKey: "post_id" });
+user.hasMany(joblike,{foreignKey:"user_id"});
+joblike.belongsTo(user,{foreignKey:"user_id"})
+
+posts.hasMany(like,{foreignKey:"post_id"});
+like.belongsTo(posts,{foreignKey:"post_id"})
+
+jobs.hasMany(joblike,{foreignKey:"job_id"});
+joblike.belongsTo(jobs,{foreignKey:"job_id"})
+
 
 user.hasMany(posts, { foreignKey: "user_id" });
 posts.belongsTo(user, { foreignKey: "user_id" });
@@ -227,9 +236,6 @@ module.exports = {
   favorites : new Collection(favorites),
   favorites : favorites,
   cv: new Collection(cv),
-  joinRequests: joinrequest,
-  followers: followers,
-  postsModel: posts,
-  user: user,
-  friends: friends,
+  joblike: new Collection(joblike),
+
 };

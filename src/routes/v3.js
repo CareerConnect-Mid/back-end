@@ -1,15 +1,18 @@
 "use strict";
 require("dotenv").config();
 const express = require("express");
-const { jobs,jobcomments } = require("../models/index");
+const { jobs,jobcomments,joblike } = require("../models/index");
 const bearerAuth = require("../auth/middleware/bearer");
 const permissions = require("../auth/middleware/checkrole");
 const checkId = require("../auth/middleware/checkId");
 const jwt = require("jsonwebtoken");
 const { where } = require("sequelize");
 const dataModules = { jobs };
-
 const router2 = express.Router();
+
+const likes = require("../models/likes/model01");
+
+
 
 router2.param("model", (req, res, next) => {
   const modelName = req.params.model;
@@ -27,6 +30,8 @@ router2.get("/jobtitle/:title", bearerAuth, handleGetTitle);
 router2.get("/jobcity/:title", bearerAuth, handleGetCIty);
 router2.post("/jobs", bearerAuth, permissions(), handleCreate);
 router2.get("/jobs/:id/jobcomments", bearerAuth, jobComments);
+router2.post("/likes", bearerAuth,handleCreateLikes);
+router2.get("/likes", bearerAuth, handleGetAll);
 router2.put(
   "/:model/:id",
   bearerAuth,
@@ -55,7 +60,7 @@ async function handleGetOne(req, res) {
 async function handleGetTitle(req, res) {
 
   // if(!parseInt(req.params.title)){
-    const title = req.params.title
+    const title = req.params.title.toLowerCase()
 
     let theRecord = await jobs.getJobTitle(title);
     res.status(200).json(theRecord);
@@ -68,6 +73,24 @@ async function handleGetTitle(req, res) {
   //     res.status(200).json(theRecord);
   // }
 }
+
+async function handleCreateLikes(req, res) {
+  let obj = req.body;
+  let userId=req.user.id;
+  obj.user_id=userId
+  let checkPost= await joblike.checkJobPostId(obj["job_id"])
+  if(checkPost){
+    res.status(201).json(" you/'ve liked this post");
+
+  }else{
+
+    let newRecord = await joblike.create(obj);
+    res.status(201).json(newRecord);
+  }
+
+}
+
+
 async function handleGetCIty(req, res) {
 
 

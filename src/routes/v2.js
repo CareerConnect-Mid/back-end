@@ -20,6 +20,8 @@ const {
   friendRequests,
   likes,
   notification,
+  favorites,
+  favorite,
   notificationModel,
   // notification2,
   chat
@@ -191,6 +193,7 @@ async function viewMessages(req, res) {
 }
 /*------------------*/
 
+
 router.param("model", (req, res, next) => {
   const modelName = req.params.model;
   if (dataModules[modelName]) {
@@ -309,8 +312,56 @@ async function handleDelete(req, res) {
   res.status(200).json(deletedRecord);
 }
 
+router.post("/add-to-favorites/:postId", bearerAuth, addToFavorites);
 
+async function addToFavorites(req, res) {
+  try {
+    const userId = req.user.id;
+    const postId = req.params.postId;
 
+    // Check if the post and user exist
+    const existingPost = await posts.get(postId);
+    const existingUser = await users.get(userId);
 
+    if (!existingPost || !existingUser) {
+      return res.status(404).json({ message: "Post or user not found." });
+    }
 
+    // Check if the post is already in favorites
+    const existingFavorite = await favorites.findOne({
+      where: { user_id: userId, post_id: postId },
+    });
+
+    if (existingFavorite) {
+      return res.status(400).json({ message: "Post is already in favorites." });
+    }
+
+    // Add the post to favorites
+    await favorites.create({
+      user_id: userId,
+      post_id: postId,
+    });
+
+    return res.status(200).json({ message: "Post added to favorites." });
+  } catch (error) {
+    console.error("Error adding post to favorites:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+}
+
+router.get("/favoriteposts", bearerAuth, getFavoritePosts);
+async function getFavoritePosts(req, res) {
+  try {
+    const userId = req.user.id;
+    const favoritePosts = await favorites.findAll({
+      where: { user_id: userId },
+      include: [{ model: posts }],
+    });
+
+    res.status(200).json(favoritePosts);
+  } catch (error) {
+    console.error("Error fetching favorite posts:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+}
 module.exports = router;

@@ -316,9 +316,9 @@ async function handleFriendRequest(req, res) {
 
 //------------------------------------------------------
 //-----------------------JOIN requests routes aljamal
-router.post("/handle-join-request/:id", bearerAuth, handleFriendRequest);
+router.post("/handle-join-request/:id", bearerAuth, handleJoinRequest);
 
-async function handleFriendRequest(req, res) {
+async function handleJoinRequest(req, res) {
   const userId = req.user.id;
   const senderid = req.params.id;
   const { action } = req.body;

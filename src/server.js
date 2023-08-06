@@ -170,6 +170,17 @@ io.on("connection", (socket) => {
   // Handle disconnection if needed
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
+    const disconnectedUserId = Object.keys(userSockets).find(
+      (userId) => userSockets[userId] === socket.id
+    );
+
+    if (disconnectedUserId) {
+      // Remove the disconnected user's ID from the userSockets object
+      delete userSockets[disconnectedUserId];
+      console.log(`User with ID ${disconnectedUserId} has been disconnected.`);
+    } else {
+      console.log("User not found in userSockets.");
+    }
   });
 });
 

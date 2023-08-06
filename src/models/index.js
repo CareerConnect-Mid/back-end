@@ -11,6 +11,7 @@ const chatModel = require("./chat/model.js");
 const cvModel = require("./cv/cv.js");
 const joinRequestsModel = require("./joinRequests/joinRequest.model.js");
 const followersModel = require("./followers/followers.js");
+const favoritesModel = require('../models/favoriteposts/model.js')
 const {
   friendRequestsModel,
 } = require("./friendrequests/FriendRequest.model.js");
@@ -40,11 +41,12 @@ const posts = postsModel(sequelize, DataTypes);
 const jobcomments = jobComments(sequelize, DataTypes);
 const comment = commentsModel(sequelize, DataTypes);
 const jobs = JobsModel(sequelize, DataTypes);
-const user = userModel(sequelize, DataTypes);
+const user = userModel(sequelize, DataTypes);;
 const like = likesModel(sequelize, DataTypes);
 const cv = cvModel(sequelize, DataTypes);
 const joinrequest = joinRequestsModel(sequelize, DataTypes);
 const followers = followersModel(sequelize, DataTypes);
+const favorites  = favoritesModel(sequelize,DataTypes);;
 ///////////////////////////////////////////// Notification Model
 const notification = notificationModel(sequelize, DataTypes);
 notification.belongsTo(user, { foreignKey: "sender_id", as: "sender" });
@@ -80,6 +82,9 @@ like.belongsTo(posts, { foreignKey: "post_id" });
 
 user.hasMany(posts, { foreignKey: "user_id" });
 posts.belongsTo(user, { foreignKey: "user_id" });
+
+user.belongsToMany(posts, { through: favorites, foreignKey: 'user_id' });
+posts.belongsToMany(user, { through: favorites, foreignKey: 'post_id' });
 
 jobs.hasMany(jobcomments, { foreignKey: "job_id" });
 jobcomments.belongsTo(jobs, { foreignKey: "job_id" });
@@ -218,6 +223,9 @@ module.exports = {
   notification: new Collection(notification),
   notificationModel: notification,
   chat: chat,
+  // favoritePosts : favoritePosts
+  favorites : new Collection(favorites),
+  favorites : favorites,
   cv: new Collection(cv),
   joinRequests: joinrequest,
   followers: followers,

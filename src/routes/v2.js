@@ -24,6 +24,8 @@ const {
   likes,
   friends,
   notification,
+  favorites,
+  favorite,
   notificationModel,
   chat,
   cv,
@@ -759,7 +761,35 @@ async function handleCreateCV(req, res) {
     res.status(200).json("you dont have Permission to make cv");
   }
 }
+router.post("/add-to-favorites/:postId", bearerAuth, addToFavorites);
 
+async function addToFavorites(req, res) {
+  try {
+    const userId = req.user.id;
+    const postId = req.params.postId;
+
+    // Check if the post and user exist
+    const existingPost = await posts.get(postId);
+    const existingUser = await users.get(userId);
+
+    if (!existingPost || !existingUser) {
+      return res.status(404).json({ message: "Post or user not found." });
+    }
+
+    // Check if the post is already in favorites
+    const existingFavorite = await favorites.findOne({
+      where: { user_id: userId, post_id: postId },
+    });
+
+    if (existingFavorite) {
+      return res.status(400).json({ message: "Post is already in favorites." });
+    }
+
+    // Add the post to favorites
+    await favorites.create({
+      user_id: userId,
+      post_id: postId,
+    });
 async function handleGetCVbyTitle(req, res) {
   if (req.user.role != "user" || req.params.id == req.user.id) {
     const title = req.params.title;
@@ -770,6 +800,12 @@ async function handleGetCVbyTitle(req, res) {
   }
 }
 
+    return res.status(200).json({ message: "Post added to favorites." });
+  } catch (error) {
+    console.error("Error adding post to favorites:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+}
 async function handleGetCVbyfield(req, res) {
   if (req.user.role != "user" || req.params.id == req.user.id) {
     const field = req.params.field;
@@ -780,6 +816,14 @@ async function handleGetCVbyfield(req, res) {
   }
 }
 
+router.get("/favoriteposts", bearerAuth, getFavoritePosts);
+async function getFavoritePosts(req, res) {
+  try {
+    const userId = req.user.id;
+    const favoritePosts = await favorites.findAll({
+      where: { user_id: userId },
+      include: [{ model: posts }],
+    });
 async function handleGetCVbyTitleAndField(req, res) {
   if (req.user.role != "user" || req.params.id == req.user.id) {
     const title = req.params.title;
@@ -792,4 +836,10 @@ async function handleGetCVbyTitleAndField(req, res) {
   }
 }
 
+    res.status(200).json(favoritePosts);
+  } catch (error) {
+    console.error("Error fetching favorite posts:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+}
 module.exports = router;

@@ -713,7 +713,7 @@ async function handleCreateLikes(req, res) {
   obj.user_id=userId
   let checkPost= await likes.checkPostId(obj["post_id"])
   if(checkPost){
-    res.status(201).json(" you/'ve liked this post");
+    res.status(201).json(" you\'ve liked this post");
 
   }else{
 

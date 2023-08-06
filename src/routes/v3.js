@@ -29,6 +29,7 @@ router2.get("/jobs/:id", bearerAuth, handleGetOne);
 router2.get("/jobtitle/:title", bearerAuth, handleGetTitle);
 router2.get("/jobcity/:title", bearerAuth, handleGetCIty);
 router2.post("/jobs", bearerAuth, permissions(), handleCreate);
+router2.post("/jobcomments", bearerAuth, permissions(), handleCommentsCreate);
 router2.get("/jobs/:id/jobcomments", bearerAuth, jobComments);
 router2.post("/likes", bearerAuth,handleCreateLikes);
 router2.get("/likes", bearerAuth, handleGetAll);
@@ -80,7 +81,7 @@ async function handleCreateLikes(req, res) {
   obj.user_id=userId
   let checkPost= await joblike.checkJobPostId(obj["job_id"])
   if(checkPost){
-    res.status(201).json(" you/'ve liked this post");
+    res.status(201).json(" you\'ve liked this post");
 
   }else{
 
@@ -90,6 +91,13 @@ async function handleCreateLikes(req, res) {
 
 }
 
+async function handleCommentsCreate(req, res) {
+  let obj = req.body;
+  let userId=req.user.id;
+  obj.user_id=userId
+  let newRecord = await jobcomments.create(obj);
+  res.status(201).json(newRecord);
+}
 
 async function handleGetCIty(req, res) {
 

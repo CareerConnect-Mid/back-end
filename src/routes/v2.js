@@ -97,7 +97,7 @@ async function handleShowPosts(req, res) {
 
     // 2. Fetch private posts of yourself and your friends
     const privatePosts = await postsModel.findAll({
-      where: {
+      where: { 
         status: "private",
         [Op.or]: [{ user_id: userId }, { user_id: { [Op.in]: friendIds } }],
       },
@@ -336,9 +336,9 @@ async function handleFriendRequest(req, res) {
 
 //------------------------------------------------------
 //-----------------------JOIN requests routes aljamal
-router.post("/handle-join-request/:id", bearerAuth, handleFriendRequest);
+router.post("/handle-join-request/:id", bearerAuth, handleJoinRequest);
 
-async function handleFriendRequest(req, res) {
+async function handleJoinRequest(req, res) {
   const userId = req.user.id;
   const senderid = req.params.id;
   const { action } = req.body;
@@ -758,16 +758,16 @@ async function userRecords(req, res) {
   res.status(200).json(userRecord);
 }
 
-async function jobComments(req, res) {
-  const jobId = parseInt(req.params.id);
-  let jcomments = await jobs.getUserPosts(jobId, jobcomments.model);
-  res.status(200).json(jcomments);
-}
-async function postComments(req, res) {
-  const postId = parseInt(req.params.id);
-  let pcomments = await posts.getUserPosts(postId, comments.model);
-  res.status(200).json(pcomments);
-}
+// async function jobComments(req, res) {
+//   const jobId = parseInt(req.params.id);
+//   let jcomments = await jobs.getUserPosts(jobId, jobcomments.model);
+//   res.status(200).json(jcomments);
+// }
+// async function postComments(req, res) {
+//   const postId = parseInt(req.params.id);
+//   let pcomments = await posts.getUserPosts(postId, comments.model);
+//   res.status(200).json(pcomments);
+// }
 
 async function handleGetAll(req, res) {
   let allRecords = await req.model.get();
@@ -793,7 +793,7 @@ async function handleCreateLikes(req, res) {
   obj.user_id=userId
   let checkPost= await likes.checkPostId(obj["post_id"])
   if(checkPost){
-    res.status(201).json(" you/'ve liked this post");
+    res.status(201).json(" you\'ve liked this post");
 
   }else{
 

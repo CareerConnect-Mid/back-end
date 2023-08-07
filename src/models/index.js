@@ -21,6 +21,7 @@ const notificationModel = require("./notification/model.js");
 const FriendsModel = require("./friends/model.js");
 const employees = require("./employees/employees.model.js");
 const employeeUserModel = require("./employees/EmployeeUser.model.js");
+const chatRoom = require("./chatRoom/chatRoom.model.js");
 const POSTGRESS_URI =
   process.env.NODE_ENV === "test"
     ? "sqlite::memory:"
@@ -132,7 +133,7 @@ user.hasMany(friendRequests, {
 const friends = FriendsModel(sequelize, DataTypes); // Create the Friends model instance
 user.belongsToMany(user, {
   through: friends,
-  as: "friends",
+  as: "friend",
   foreignKey: "user_id",
 });
 user.belongsToMany(user, {
@@ -154,7 +155,7 @@ joinrequest.belongsTo(user, { foreignKey: "receiver_id", as: "receiver" });
 //------------------------------------
 const employeesTable = employees(sequelize, DataTypes);
 const EmployeeUser = employeeUserModel(sequelize, DataTypes);
-
+const chatRoomTable = chatRoom(sequelize, DataTypes);
 employeesTable.belongsToMany(user, {
   through: EmployeeUser,
   foreignKey: "employee_id",
@@ -166,6 +167,10 @@ user.belongsToMany(employeesTable, {
   as: "companyEmployee",
 });
 
+chatRoomTable.belongsTo(user, {
+  foreignKey: "senderId",
+  as: "senderInfo",
+});
 //----------- join requests Aljamal
 //------------------------------------
 
@@ -241,4 +246,5 @@ module.exports = {
   joblike: new Collection(joblike),
   employeesTable: employeesTable,
   EmployeeUser: EmployeeUser,
+  chatRoomTable: chatRoomTable,
 };

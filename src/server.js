@@ -15,7 +15,13 @@ const socketIo = require("socket.io");
 /* ------------------------- handle recieved tocken from client , this to be removed later */
 const jwt = require("jsonwebtoken");
 const SECRET = process.env.SECRET || "secretstring";
-const { notificationModel } = require("./models/index");
+const {
+  notificationModel,
+  user,
+  employeesTable,
+  chatRoomTable,
+} = require("./models/index");
+
 /* ----------------------------------------------------------------------------------------*/
 // const logger = require("./middleware/logger.js");
 const v1Routes = require("./routes/v1.js");
@@ -163,8 +169,110 @@ io.on("connection", (socket) => {
     }
   });
   /*---------------------- handle message and message notification - mohannad------------------------- */
-  /*---------------------- handle message and message notification for compayn- mohannad ------------------------ */
+  async function isEmployee(userId, companyId) {
+    try {
+      // Find the user by the userId
+      const User = await user.findByPk(userId);
 
+      // If the user is not found, they are not an employee
+      if (!User) {
+        return false;
+      }
+
+      // Check if the user is an employee of the company
+      const employee = await employeesTable.findOne({
+        where: {
+          company_id: companyId,
+          employee_id: userId,
+        },
+      });
+
+      // Return true if the user is an employee, otherwise false
+      return !!employee;
+    } catch (error) {
+      console.error("Error checking if user is an employee:", error);
+      return false; // Return false in case of an error
+    }
+  }
+  async function isCompanyUser(userId, companyId) {
+    try {
+      // Find the user by the userId
+      const user = await user.findByPk(userId);
+
+      // If the user is not found or their role is not "company", they are not a company user
+      if (!user || user.role !== "company") {
+        return false;
+      }
+
+      // Check if the user's company ID matches the provided companyId
+      return userId === companyId;
+    } catch (error) {
+      console.error("Error checking if user is a company user:", error);
+      return false; // Return false in case of an error
+    }
+  }
+  /*---------------------- handle message and message notification for compayn- mohannad ------------------------ */
+  socket.on("joinCompanyRoom", async (data) => {
+    // Verify if the user is an employee of the company
+    const Employee = await isEmployee(data.userId, data.companyId);
+
+    if (!Employee) {
+      // If the user is not an employee, emit an error message to the client
+      socket.emit("errorMessage", {
+        message: "You are not authorized to join this room.",
+      });
+      return;
+    }
+
+    const roomName = `company-${companyId}-${roomType}`;
+
+    // Add the user to the company room
+    socket.join(roomName);
+  });
+
+  socket.on("sendMessage", async (data) => {
+    try {
+      const roomName = `company-${data.companyId}-${data.roomType}`;
+
+      // Check if the user has joined the room
+      if (!socket.rooms.has(roomName)) {
+        // If the user has not joined the room, emit an error message to the client
+        socket.emit("errorMessage", {
+          message: "You are not authorized to send messages in this room.",
+        });
+        return;
+      }
+
+      // If the room is private (announcements), check if the user is the company user
+      if (roomType === "announcements") {
+        // Check if the user is the company user and has the same company ID as the room
+        const CompanyUser = await isCompanyUser(data.userId, data.companyId);
+
+        if (!CompanyUser) {
+          // If the user is not the company, emit an error message to the client
+          socket.emit("errorMessage", {
+            message: "Only the company can send messages in this room.",
+          });
+          return;
+        }
+      }
+
+      // Save the message to the database
+      await chatRoomTable.create({
+        room: roomName,
+        roomType: data.roomType,
+        message: data.message,
+        senderId: data.userId, // Assuming you have set the user ID on the socket object after authentication
+      });
+
+      // Broadcast the message to all users in the room
+      socket.broadcast
+        .to(roomName)
+        .emit("messageReceived", { message, senderId: data.userId });
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  });
   /*---------------------- handle message and message notification for compayn- mohannad ------------------------ */
 
   // Handle disconnection if needed

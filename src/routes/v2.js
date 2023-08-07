@@ -223,7 +223,7 @@ async function getFriends(req, res) {
     const user = await userModel.findByPk(userId, {
       include: [
         {
-          association: "friends",
+          association: "friend",
           attributes: [
             "id",
             "username",
@@ -236,7 +236,7 @@ async function getFriends(req, res) {
     });
 
     // Extract only the friends from the user object
-    const friends = user.friends;
+    const friends = user.friend;
 
     return res.status(200).json(friends);
   } catch (error) {

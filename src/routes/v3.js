@@ -34,6 +34,7 @@ router2.get("/jobcity/:title", bearerAuth, handleGetCIty);
 router2.post("/jobs", bearerAuth, permissions(), handleCreate);
 router2.post("/jobcomments", bearerAuth, handleCommentsCreate);
 router2.get("/jobs/:id/jobcomments", bearerAuth, jobComments);
+router2.get("/jobs/:id/likes", bearerAuth, postLikes);
 router2.get("/job/:id/applyer", bearerAuth, jobapplyer);
 router2.post("/likes", bearerAuth, handleCreateLikes);
 router2.get("/likes", bearerAuth, handleGetAll);
@@ -66,17 +67,45 @@ async function handleGetTitle(req, res) {
   // }
 }
 
+// async function handleCreateLikes(req, res) {
+//   let obj = req.body;
+//   let userId = req.user.id;
+//   obj.user_id = userId;
+//   let checkPost = await joblike.checkJobPostId(obj["job_id"]);
+//   if (checkPost) {
+//     res.status(201).json(" you've liked this post");
+//   } else {
+//     let newRecord = await joblike.create(obj);
+//     res.status(201).json(newRecord);
+//   }
+// }
+
 async function handleCreateLikes(req, res) {
-  let obj = req.body;
-  let userId = req.user.id;
-  obj.user_id = userId;
-  let checkPost = await joblike.checkJobPostId(obj["job_id"]);
-  if (checkPost) {
-    res.status(201).json(" you've liked this post");
+  const obj = req.body;
+  const userId = req.user.id;
+  console.log(userId)
+  obj["user_id"] = userId;
+
+  // Check if the user has already liked the post
+  const existingLike = await joblike.checkJobPostId(obj["job_id"],obj["user_id"] );
+  if (existingLike) {
+    res.status(400).json("You've already liked this post.");
   } else {
-    let newRecord = await joblike.create(obj);
-    res.status(201).json(newRecord);
+    // Create a new like record
+    // try {
+      const newRecord = await joblike.create(obj);
+      res.status(201).json(newRecord);
+    // } catch (error) {
+      // console.error(error);
+      // res.status(500).json("An error occurred while creating the like.");
+    // }
   }
+}
+
+async function postLikes(req, res) {
+  const postId = parseInt(req.params.id);
+  let pLikes = await jobs.getUserPosts(postId, joblike.model);
+  res.status(200).json(pLikes);
 }
 
 async function handleCommentsCreate(req, res) {

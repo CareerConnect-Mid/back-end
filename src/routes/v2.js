@@ -74,12 +74,12 @@ async function getFavoritePosts(req, res) {
 ///////////////////////////// Notification model
 
 ///////////////////////////////////////////////////////////////////////// private and public posts motasem
-router.get("/showposts", bearerAuth, handleShowPosts);
+router.get("/homeposts", bearerAuth, handleShowHomePosts);
 
-async function handleShowPosts(req, res) {
-  const userId = req.user.id;
+async function handleShowHomePosts(req, res) {
 
   try {
+    const userId = req.user.id;
     const myfriends = await friends.findAll({
       attributes: ["friend_id"],
       where: {
@@ -89,21 +89,31 @@ async function handleShowPosts(req, res) {
 
     // Extract friend IDs from the result and send the response
     const friendIds = myfriends.map((friend) => friend.friend_id);
-
-    // Fetch private posts of yourself and your friends
-    const privatePosts = await postsModel.findAll({
+    
+    ///////////////////////////////
+    const myCompany = await followers.findAll({
+      // attributes: ["friend_id"],
       where: {
-        status: "private",
-        [Op.or]: [{ user_id: userId }, { user_id: { [Op.in]: friendIds } }],
+        sender_id: userId,
       },
     });
 
-    // 3. Fetch public posts
-    const publicPosts = await postsModel.findAll({
-      where: { status: "public" },
+    // Extract friend IDs from the result and send the response
+    const companyIds = myCompany.map((Company) => Company.receiver_id);
+
+    // Fetch private posts of yourself and your friends
+    const homePosts = await postsModel.findAll({
+      where: {
+        [Op.or]: [{ user_id: userId }, { user_id: { [Op.in]: friendIds } }, { user_id: { [Op.in]: companyIds } }],
+      },
     });
 
-    res.status(200).json({ privatePosts, publicPosts });
+    // // 3. Fetch public posts
+    // const publicPosts = await postsModel.findAll({
+    //   where: { status: "public" },
+    // });
+
+    res.status(200).json(homePosts);
   } catch (error) {
     console.error("Error fetching posts:", error);
     res
@@ -111,6 +121,50 @@ async function handleShowPosts(req, res) {
       .json({ message: "An error occurred while fetching posts." });
   }
 }
+
+//---------------------------------------------------------- home posts privet& public   ^^^^^^^^^^
+//---------------------------------------------------------- user posts privet& public   vvvvvvvvv
+
+router.get("/userposts/:id", bearerAuth, handleShowUserPosts);
+
+async function handleShowUserPosts(req, res) {
+
+  try {
+    const userId = req.user.id;
+    const myfriends = await friends.findOne({
+      attributes: ["friend_id"],
+      where: { 
+        [Op.or]: [
+        {user_id: userId, friend_id: req.params.id},
+        { user_id: req.params.id, friend_id: userId }
+      ]
+      },
+    });
+
+    // const userPosts = await postsModel.findAll({
+    //   where: { user_id: req.params.id , status: "public" },
+    // });
+
+    if(myfriends || req.user.id == req.params.id){
+      const userPosts = await postsModel.findAll({
+        where: { user_id: req.params.id },
+      });
+      res.status(200).json(userPosts);
+    } 
+    else {
+      const userPosts = await postsModel.findAll({
+        where: { user_id: req.params.id , status: "public" },
+      });
+      res.status(200).json(userPosts);
+    }
+  } catch (error) {
+    console.error("Error fetching posts:", error);
+    res
+      .status(500)
+      .json({ message: "An error occurred while fetching posts." });
+  }
+}
+
 
 ///////////////////////////////////////////////////////////////////////// private and public posts motasem
 //------------------------------------------------------
@@ -293,6 +347,57 @@ async function handleFriendRequest(req, res) {
   });
 }
 
+
+router.delete("/unfriend/:id", bearerAuth, handleDeleteFriend);
+
+async function handleDeleteFriend(req, res) {
+
+  try{
+    const friendid = req.params.id;
+    const userid = req.user.id;
+
+    const checkFriend = await friends.findOne({
+      where: {
+              [Sequelize.Op.or]: [
+                { user_id: userid, friend_id: friendid },
+                { user_id: friendid, friend_id: userid },
+              ],
+            },
+    })
+
+    if(!checkFriend){
+      return res.status(200).json("You are not friends yet");
+
+    }
+
+    const unFriend = await friends.destroy({
+    where: {
+      [Sequelize.Op.or]: [
+        { user_id: userid, friend_id: friendid },
+        { user_id: friendid, friend_id: userid },
+      ],
+    },
+  })
+
+  const deleteFriendsReq = await friendRequests.destroy({
+    where: {
+      [Sequelize.Op.or]: [
+        { receiver_id: userid, sender_id: friendid },
+        { receiver_id: friendid, sender_id: userid },
+      ],
+    },
+  })
+
+    return res.status(200).json("deleted successfully");
+
+  } catch (error) {
+    console.error("Error retrieving received friend requests:", error);
+    return res.status(500).json({
+    message: "An error occurred while retrieving received friend requests.",
+  });
+}
+}
+
 //------------------------friend requests routes mohannad
 //------------------------------------------------------
 
@@ -452,7 +557,71 @@ async function getCompanyEmployees(req, res) {
   }
 }
 
+router.delete("/unjoin/:id", bearerAuth, handleDeleteJoin);
 
+async function handleDeleteJoin(req, res) {
+
+  try{
+    const companyid = req.params.id;
+    const employedid = req.user.id;
+
+    const checkJoin = await employeesTable.findOne({
+      where: {
+              [Sequelize.Op.or]: [
+                { company_id: companyid, employee_id: employedid },
+                { company_id: employedid, employee_id: companyid },
+              ],
+            },
+    })
+    
+    if(!checkJoin){
+      return res.status(200).json("You are not employee in this company");
+    }
+  
+    const unJoin = await employeesTable.destroy({
+    where: {
+      [Sequelize.Op.or]: [
+        { employee_id: companyid, company_id: employedid },
+        { employee_id: employedid, company_id: companyid },
+      ],
+    },
+  })
+
+  const deleteJoinReq = await joinRequests.destroy({
+    where: {
+      [Sequelize.Op.or]: [
+        { receiver_id: companyid, sender_id: employedid },
+        { receiver_id: employedid, sender_id: companyid },
+      ],
+    },
+  })
+
+  
+
+  
+    await userModel.update(
+      { employed: false },
+      {
+        where: {
+          [Sequelize.Op.or]: [
+            { id: companyid},
+            { id: employedid,},
+          ],
+        },
+      }
+    );
+  
+  
+
+    return res.status(200).json("deleted successfully");
+
+  } catch (error) {
+    console.error("Error retrieving received join requests:", error);
+    return res.status(500).json({
+    message: "An error occurred while retrieving received join requests.",
+  });
+}
+}
 
 //------------------------JOIN requests routes aljamal
 //------------------------------------------------------
@@ -467,7 +636,7 @@ async function makeFollow(req, res, next) {
     const receiverid = req.params.id;
     const receiver = await users.get(receiverid);
 
-    if (req.user.role !== "company" && receiver.dataValues.role == "company") {
+    if (receiver.dataValues.role == "company") {
       // check if the users exist
       const senderid = req.user.dataValues.id; //from tocken
       const sender = await users.get(senderid);
@@ -545,6 +714,74 @@ async function viewFollowers(req, res, next) {
       message: "An error occurred while retrieving received followers.",
     });
   }
+}
+
+
+router.get("/followers/:id", bearerAuth, viewFollowersbyId);
+async function viewFollowersbyId(req, res, next) {
+  try {
+    // if (req.user.dataValues.role == "company") {
+      const receiverid = req.params.id; //from tocken
+
+      const receivedFollowers = await followers.findAll({
+        where: { receiver_id: receiverid },
+        include: [
+          {
+            model: userModel,
+            as: "sender",
+          },
+        ],
+      });
+
+      const company = await userModel.findOne({
+        where: {id: receiverid}
+      })
+
+      if (receivedFollowers.length === 0) {
+        return res.status(404).json(`there is no followers to ${company.username} company yet`);
+      }
+
+      return res.status(200).json(receivedFollowers);
+    // } else {
+    //   return res.status(200).json("you don't have Permission");
+    // }
+  } catch (error) {
+    console.error("Error retrieving received friend requests:", error);
+    return res.status(500).json({
+      message: "An error occurred while retrieving received friend requests.",
+    });
+  }
+}
+
+
+router.delete("/unfollow/:id", bearerAuth, handleDeleteFollow);
+
+async function handleDeleteFollow(req, res) {
+
+  try{
+    const receiverid = req.params.id;
+    const senderid = req.user.id;
+
+    const checkFollow = await followers.findOne({
+      where: {sender_id: senderid, receiver_id: receiverid}
+    })
+
+    if(!checkFollow){
+      return res.status(200).json("you are not follow ths company");
+
+    }
+
+    const unFollow = await followers.destroy({
+    where: {sender_id: senderid, receiver_id: receiverid}
+  })
+    return res.status(200).json("deleted successfully");
+
+  } catch (error) {
+    console.error("Error retrieving received follow requests:", error);
+    return res.status(500).json({
+    message: "An error occurred while retrieving received follow requests.",
+  });
+}
 }
 
 //------------------------Followers routes aljamal

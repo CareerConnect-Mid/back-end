@@ -1,4 +1,4 @@
-'use strict'
+"use strict";
 
 const Likes= (Sequelize, DataTypes)=>
     Sequelize.define("likes",{
@@ -18,6 +18,4 @@ const Likes= (Sequelize, DataTypes)=>
 
 
 
-
-
-module.exports= Likes
+module.exports = Likes;

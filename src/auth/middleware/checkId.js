@@ -1,20 +1,27 @@
 "use strict";
-
-const {userModel} = require("../../models/index");
-const {posts} = require("../../models/index");
+const {
+  posts,
+  comments,
+  jobcomments,
+  userModel,
+} = require("../../models/index");
 
 module.exports = async (req, res, next) => {
-    try {
-        const postId = await posts.get(req.params.id);
-        const postUserId = postId["dataValues"].user_id;
-        const userId = req.user.dataValues.id;
+  try {
+    const modelId = await req.model.get(req.params.id);
+    const modelUserId = modelId["dataValues"].user_id;
+    const userId = req.user.dataValues.id;
 
-        if (postUserId === userId || req.user.role === "superadmin") {
-            next();
-        } else {
-            next("not allowed");
-        }
-    } catch (error) {
-        next("not allowed");
+    if (
+      modelUserId === userId ||
+      req.user.role === "superadmin" ||
+      modelId["dataValues"].id === userId
+    ) {
+      next();
+    } else {
+      next("you don't have permission");
     }
+  } catch (error) {
+    next("not allowed");
+  }
 };

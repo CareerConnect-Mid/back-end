@@ -25,14 +25,13 @@ const {
   friends,
   notification,
   favorites,
-  favorite,
   notificationModel,
   chat,
   cv,
   joinRequests,
   followers,
   applyjob,
-  employees,
+  employeesTable,
 } = require("../models/index");
 
 const router = express.Router();
@@ -44,7 +43,6 @@ function welcomeHandler(req, res) {
 
 ////////////////////////////// Notification model
 router.get("/usernotification", bearerAuth, userNotifications);
-
 async function userNotifications(req, res) {
   const userId = req.user.id;
 
@@ -57,6 +55,22 @@ async function userNotifications(req, res) {
   res.status(200).json(notifications);
 }
 
+router.get("/favoriteposts", bearerAuth, getFavoritePosts);
+async function getFavoritePosts(req, res) {
+  try {
+    const userId = req.user.id;
+
+    const favoritePosts = await favorites.findAll({
+      where: { user_id: userId },
+    });
+
+    res.status(200).json(favoritePosts);
+  } catch (error) {
+    console.error("Error fetching favorite posts:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+}
+
 ///////////////////////////// Notification model
 
 ///////////////////////////////////////////////////////////////////////// private and public posts motasem
@@ -66,21 +80,19 @@ async function handleShowPosts(req, res) {
   const userId = req.user.id;
 
   try {
-    // 1. Fetch your friends' IDs based on accepted friend requests
-    const friendRequestsReceived = await friendRequests.findAll({
+    const myfriends = await friends.findAll({
+      attributes: ["friend_id"],
       where: {
-        receiver_id: userId,
-        status: "accepted",
+        user_id: userId,
       },
     });
 
-    const friendIds = friendRequestsReceived.map(
-      (request) => request.sender_id
-    );
+    // Extract friend IDs from the result and send the response
+    const friendIds = myfriends.map((friend) => friend.friend_id);
 
-    // 2. Fetch private posts of yourself and your friends
+    // Fetch private posts of yourself and your friends
     const privatePosts = await postsModel.findAll({
-      where: { 
+      where: {
         status: "private",
         [Op.or]: [{ user_id: userId }, { user_id: { [Op.in]: friendIds } }],
       },
@@ -175,40 +187,7 @@ async function Friendsreq(req, res) {
   const friendsReq = await friendRequests.findAll();
   res.status(200).json(friendsReq);
 }
-router.get("/my-friends", bearerAuth, getFriendsWithNames);
 
-async function getFriendsWithNames(req, res) {
-  const userId = req.user.id;
-
-  try {
-    // 1. Fetch your friends' IDs based on accepted friend requests
-    const friendRequestsReceived = await friendRequests.findAll({
-      where: {
-        receiver_id: userId,
-        status: "accepted",
-      },
-    });
-
-    const friendIds = friendRequestsReceived.map(
-      (request) => request.sender_id
-    );
-
-    // 2. Fetch the friend users' records including their names
-    const friendsWithNames = await userModel.findAll({
-      where: {
-        id: { [Op.in]: friendIds },
-      },
-      attributes: ["id", "username"],
-    });
-
-    res.status(200).json(friendsWithNames);
-  } catch (error) {
-    console.error("Error fetching friends with names:", error);
-    res.status(500).json({
-      message: "An error occurred while fetching friends with names.",
-    });
-  }
-}
 //////////////////////////////////////////////////////////////////////////////////////// friends routes motasem
 
 // /*------------------*/
@@ -223,7 +202,7 @@ async function getFriends(req, res) {
     const user = await userModel.findByPk(userId, {
       include: [
         {
-          association: "friends",
+          association: "friend",
           attributes: [
             "id",
             "username",
@@ -236,7 +215,7 @@ async function getFriends(req, res) {
     });
 
     // Extract only the friends from the user object
-    const friends = user.friends;
+    const friends = user.friend;
 
     return res.status(200).json(friends);
   } catch (error) {
@@ -262,7 +241,7 @@ async function viewFriendRequests(req, res) {
 
     if (receivedFriendRequests.length === 0) {
       return res.status(404).json({
-        message: "No pendin friend requests .",
+        message: "No pending friend requests .",
       });
     }
     return res.status(200).json(receivedFriendRequests);
@@ -340,10 +319,10 @@ async function handleJoinRequest(req, res) {
 
     // Save the updated status in the database
     await joinRequest.save();
-    // await employees.create({
-    //   company_id: userId,
-    //   employee_id: senderid,
-    // });
+    await employeesTable.create({
+      company_id: userId,
+      employee_id: senderid,
+    });
 
     await userModel.update(
       { employed: true },
@@ -400,7 +379,7 @@ async function SendJoinRequest(req, res, next) {
       await joinRequests.create({
         sender_id: senderid,
         receiver_id: receiverid,
-        message: `you have a join request from ${receiver.dataValues.username}`,
+        message: `you have a join request from ${sender.dataValues.username}`,
       });
 
       return res.status(200).json("Join request sent successfully.");
@@ -439,42 +418,36 @@ async function viewJoinRequests(req, res, next) {
   }
 }
 
-// router.get("/company/employees", bearerAuth, getCompanyEmployees);
-// async function getCompanyEmployees(req, res) {
-//   try {
-//     const companyId = req.user.id; // Assuming the user ID represents the company ID
+router.get("/company/employees", bearerAuth, getCompanyEmployees);
+async function getCompanyEmployees(req, res) {
+  const companyId = req.user.id; // Assuming the user ID represents the company ID
 
-//     // Find the employees of the company using the "employees" model and include user details
-//     const companyEmployees = await employees.findAll({
-//       where: {
-//         company_id: companyId,
-//       },
-//       include: [
-//         {
-//           model: userModel,
-//           as: "employee",
-//           attributes: [
-//             "id",
-//             "username",
-//             "firstName",
-//             "lastName",
-//             "profilePicture",
-//           ],
-//         },
-//       ],
-//     });
+  // try {
+  // Find the company with the given companyId
+  const company = await userModel.findByPk(companyId);
 
-//     // Extract only the employee details from the companyEmployees array
-//     // const employeesDetails = companyEmployees.map(
-//     //   (employee) => employee.employee
-//     // );
+  if (!company) {
+    return res.status(404).json({ message: "Company not found" });
+  }
 
-//     return res.status(200).json(companyEmployees);
-//   } catch (error) {
-//     console.error("Error getting company employees:", error);
-//     return res.status(500).json({ message: "Server error." });
-//   }
-// }
+  // Get all employees associated with the company along with user information
+  const companyEmployees = await employeesTable.findAll({
+    where: {
+      company_id: companyId,
+    },
+    include: [
+      {
+        model: userModel,
+        as: "employee",
+      },
+    ],
+  });
+
+  res.json({ company, employees: companyEmployees });
+  // } catch (error) {
+  //   res.status(500).json({ message: "Internal server error" });
+  // }
+}
 
 //------------------------JOIN requests routes aljamal
 //------------------------------------------------------
@@ -539,6 +512,12 @@ async function viewFollowers(req, res, next) {
 
       const receivedFollowers = await followers.findAll({
         where: { receiver_id: receiverid },
+        include: [
+          {
+            model: userModel,
+            as: "sender",
+          },
+        ],
       });
 
       if (receivedFollowers.length === 0) {
@@ -625,67 +604,58 @@ async function viewMessages(req, res) {
 //------------------------Chat aljamal
 //------------------------------------------------------
 
-
 //------------------------------------------------------
 //----------------------- applying jobs aljamal
 router.post("/applyjob/:id", bearerAuth, applyJob);
 async function applyJob(req, res, next) {
   try {
-
-      // check if the users exist
+    // check if the users exist
     const jobid = req.params.id;
     const job = await jobs.get(jobid);
     const companyid = job.dataValues.user_id;
     const company = await users.get(companyid);
 
-    if(req.user.role !== 'company' && company.dataValues.role == 'company'){  // check the id of the applyer for the job
+    if (req.user.role !== "company" && company.dataValues.role == "company") {
+      // check the id of the applyer for the job
 
       // check if the users exist
-    const applyerid = req.user.dataValues.id; //from tocken
-    const applyer = await users.get(applyerid);
+      const applyerid = req.user.dataValues.id; //from tocken
+      const applyer = await users.get(applyerid);
       // console.log(applyer.dataValues.)
-    if (!company || !applyer) {
-      return res.status(404).json("User not found.");
-    }
-    // check if the request is already sent so that it doesnet dublicate
-    const existingApply = await applyjob.findOne({       
-      where: {
+      if (!company || !applyer) {
+        return res.status(404).json("User not found.");
+      }
+      // check if the request is already sent so that it doesnet dublicate
+      const existingApply = await applyjob.findOne({
+        where: {
+          job_id: jobid,
+          applyer_id: applyerid,
+        },
+      });
+
+      if (existingApply) {
+        return res.status(400).json("You are already apply to this job");
+      }
+
+      // create the new Join request
+      // Create a new Join request entry in the JoinRequest table
+      await applyjob.create({
         job_id: jobid,
-        applyer_id: applyerid
-      },
-    });
+        applyer_id: applyerid,
+      });
 
-    if (existingApply) {
-      return res.status(400).json("You are already apply to this job");
-    }
-
-    // create the new Join request
-    // Create a new Join request entry in the JoinRequest table
-    await applyjob.create({
-      job_id: jobid,
-      applyer_id: applyerid
-    });
-
-    return res
-      .status(200)
-      .json("You are apply to this job successfully.");
-    } 
-    else 
-    {
-      return res
-      .status(200)
-      .json("you don't have Permission");
+      return res.status(200).json("You are apply to this job successfully.");
+    } else {
+      return res.status(200).json("you don't have Permission");
     }
   } catch (error) {
     next("an error occured, the Join request failed");
   }
 }
- 
 
 // the get in v3
 //------------------------applying jobs aljamal
 //------------------------------------------------------
-
 
 router.param("model", (req, res, next) => {
   const modelName = req.params.model;
@@ -821,7 +791,7 @@ async function handleUpdate(req, res) {
 async function handleDelete(req, res) {
   let id = req.params.id;
   let deletedRecord = await req.model.delete(id);
-  res.status(200).json(deletedRecord);
+  res.status(200).json("deleted successfully");
 }
 
 //--------------------------------------------------------CV get & creat & search ---------------------------
@@ -908,7 +878,6 @@ async function addToFavorites(req, res) {
       post_id: postId,
     });
 
-
     return res.status(200).json({ message: "Post added to favorites." });
   } catch (error) {
     console.error("Error adding post to favorites:", error);
@@ -925,24 +894,20 @@ async function handleGetCVbyfield(req, res) {
   }
 }
 
-router.get("/favoriteposts", bearerAuth, getFavoritePosts);
-async function getFavoritePosts(req, res) {
-  try {
-    const userId = req.user.id;
-    const favoritePosts = await favorites.findAll({
-      where: { user_id: userId },
-      include: [{ model: posts }],
-    });
+// router.get("/favoriteposts", bearerAuth, getFavoritePosts);
+// async function getFavoritePosts(req, res) {
+//   try {
+//     const userId = req.user.id;
+//     const favoritePosts = await favorites.findAll({
+//       where: { user_id: userId },
+//       include: [{ model: posts }],
+//     });
 
-    res.status(200).json(favoritePosts);
-  } catch (error) {
-    console.error("Error fetching favorite posts:", error);
-    res.status(500).json({ message: "Internal server error." });
-  }
-
-}
-
-
+//     res.status(200).json(favoritePosts);
+//   } catch (error) {
+//     console.error("Error fetching favorite posts:", error);
+//     res.status(500).json({ message: "Internal server error." });
+//   }
+// }
 
 module.exports = router;
-

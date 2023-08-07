@@ -1,4 +1,4 @@
-const employeesModel = (sequelize, DataTypes) => {
+const employees = (sequelize, DataTypes) => {
   return sequelize.define("employees", {
     company_id: {
       type: DataTypes.INTEGER,
@@ -11,4 +11,4 @@ const employeesModel = (sequelize, DataTypes) => {
   });
 };
 
-module.exports = employeesModel;
+module.exports = employees;

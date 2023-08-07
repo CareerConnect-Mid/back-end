@@ -39,7 +39,7 @@ const io = new Server(server, {
 // --------------------------
 app.use(express.json());
 app.use("/api/v1", v1Routes);
-app.use("/career", v2Routes);
+app.use("/home", v2Routes);
 app.use("/careerjob", v3Routes);
 app.use(authRoutes);
 

@@ -2,7 +2,7 @@
 
 const express = require("express");
 const authRouter = express.Router();
-
+const checkSuperAdmin = require("./middleware/checkSuperAdmin");
 const { users } = require("../../src/models/index");
 const basicAuth = require("./middleware/basic.js");
 const bearerAuth = require("./middleware/bearer.js");
@@ -13,7 +13,8 @@ authRouter.post("/signup", async (req, res, next) => {
   try {
     let userRecord = await users.create(req.body);
     const output = {
-      user: userRecord.username,
+      userId: userRecord.id,
+      userName: userRecord.username,
       role: userRecord.role,
     };
     res.status(201).json(output);
@@ -25,6 +26,7 @@ authRouter.post("/signup", async (req, res, next) => {
 authRouter.post("/signin", basicAuth, (req, res, next) => {
   try {
     const user = {
+      id: req.user.id,
       username: req.user.username,
       token: req.user.token,
       role: req.user.role,
@@ -38,9 +40,11 @@ authRouter.post("/signin", basicAuth, (req, res, next) => {
 authRouter.get(
   "/users",
   bearerAuth,
+  checkSuperAdmin,
   async (req, res, next) => {
     const userRecords = await users.get();
-    const list = userRecords.map((user) => user.username);
+
+    const list = userRecords.map((user) => user.username + " " + user.id);
     res.status(200).json(list);
   }
 );

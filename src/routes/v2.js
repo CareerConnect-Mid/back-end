@@ -43,6 +43,17 @@ function welcomeHandler(req, res) {
 
 ////////////////////////////// Notification model
 router.get("/usernotification", bearerAuth, userNotifications);
+async function userNotifications(req, res) {
+  const userId = req.user.id;
+
+  let notifications = await notificationModel.findAll({
+    where: {
+      receiver_id: userId,
+    },
+  });
+
+  res.status(200).json(notifications);
+}
 
 router.get("/favoriteposts", bearerAuth, getFavoritePosts);
 async function getFavoritePosts(req, res) {
@@ -60,18 +71,6 @@ async function getFavoritePosts(req, res) {
   }
 }
 
-async function userNotifications(req, res) {
-  const userId = req.user.id;
-
-  let notifications = await notificationModel.findAll({
-    where: {
-      receiver_id: userId,
-    },
-  });
-
-  res.status(200).json(notifications);
-}
-
 ///////////////////////////// Notification model
 
 ///////////////////////////////////////////////////////////////////////// private and public posts motasem
@@ -81,19 +80,17 @@ async function handleShowPosts(req, res) {
   const userId = req.user.id;
 
   try {
-    // 1. Fetch your friends' IDs based on accepted friend requests
-    const friendRequestsReceived = await friendRequests.findAll({
+    const myfriends = await friends.findAll({
+      attributes: ["friend_id"],
       where: {
-        receiver_id: userId,
-        status: "accepted",
+        user_id: userId,
       },
     });
 
-    const friendIds = friendRequestsReceived.map(
-      (request) => request.sender_id
-    );
+    // Extract friend IDs from the result and send the response
+    const friendIds = myfriends.map((friend) => friend.friend_id);
 
-    // 2. Fetch private posts of yourself and your friends
+    // Fetch private posts of yourself and your friends
     const privatePosts = await postsModel.findAll({
       where: {
         status: "private",
@@ -190,40 +187,7 @@ async function Friendsreq(req, res) {
   const friendsReq = await friendRequests.findAll();
   res.status(200).json(friendsReq);
 }
-router.get("/my-friends", bearerAuth, getFriendsWithNames);
 
-async function getFriendsWithNames(req, res) {
-  const userId = req.user.id;
-
-  try {
-    // 1. Fetch your friends' IDs based on accepted friend requests
-    const friendRequestsReceived = await friendRequests.findAll({
-      where: {
-        receiver_id: userId,
-        status: "accepted",
-      },
-    });
-
-    const friendIds = friendRequestsReceived.map(
-      (request) => request.sender_id
-    );
-
-    // 2. Fetch the friend users' records including their names
-    const friendsWithNames = await userModel.findAll({
-      where: {
-        id: { [Op.in]: friendIds },
-      },
-      attributes: ["id", "username"],
-    });
-
-    res.status(200).json(friendsWithNames);
-  } catch (error) {
-    console.error("Error fetching friends with names:", error);
-    res.status(500).json({
-      message: "An error occurred while fetching friends with names.",
-    });
-  }
-}
 //////////////////////////////////////////////////////////////////////////////////////// friends routes motasem
 
 // /*------------------*/
@@ -277,7 +241,7 @@ async function viewFriendRequests(req, res) {
 
     if (receivedFriendRequests.length === 0) {
       return res.status(404).json({
-        message: "No pendin friend requests .",
+        message: "No pending friend requests .",
       });
     }
     return res.status(200).json(receivedFriendRequests);
@@ -415,7 +379,7 @@ async function SendJoinRequest(req, res, next) {
       await joinRequests.create({
         sender_id: senderid,
         receiver_id: receiverid,
-        message: `you have a join request from ${receiver.dataValues.username}`,
+        message: `you have a join request from ${sender.dataValues.username}`,
       });
 
       return res.status(200).json("Join request sent successfully.");
@@ -548,6 +512,12 @@ async function viewFollowers(req, res, next) {
 
       const receivedFollowers = await followers.findAll({
         where: { receiver_id: receiverid },
+        include: [
+          {
+            model: userModel,
+            as: "sender",
+          },
+        ],
       });
 
       if (receivedFollowers.length === 0) {
@@ -777,12 +747,13 @@ async function handleCreateLikes(req, res) {
   let checkPost = await likes.checkPostId(obj["post_id"]);
   if (checkPost) {
     res.status(201).json(" you've liked this post");
+    console.log(checkPost.user_id, userId, checkPost);
   } else {
     let newRecord = await likes.create(obj);
     res.status(201).json(newRecord);
   }
 }
-
+// checkPost.user_id === userId
 async function handleUpdate(req, res) {
   const id = req.params.id;
   const obj = req.body;
@@ -793,7 +764,7 @@ async function handleUpdate(req, res) {
 async function handleDelete(req, res) {
   let id = req.params.id;
   let deletedRecord = await req.model.delete(id);
-  res.status(200).json(deletedRecord);
+  res.status(200).json("deleted successfully");
 }
 
 //--------------------------------------------------------CV get & creat & search ---------------------------

@@ -94,8 +94,6 @@ joblike.belongsTo(jobs,{foreignKey:"job_id"})
 user.hasMany(posts, { foreignKey: "user_id" });
 posts.belongsTo(user, { foreignKey: "user_id" });
 
-user.belongsToMany(posts, { through: favorites, foreignKey: 'user_id' });
-posts.belongsToMany(user, { through: favorites, foreignKey: 'post_id' });
 
 jobs.hasMany(jobcomments, { foreignKey: "job_id" });
 jobcomments.belongsTo(jobs, { foreignKey: "job_id" });
@@ -108,6 +106,9 @@ jobs.belongsTo(user, { foreignKey: "user_id" });
 
 user.hasOne(cv, { foreignKey: "user_id" });
 cv.belongsTo(user, { foreignKey: "user_id" });
+
+user.belongsToMany(posts, { through: favorites, foreignKey: 'user_id' });
+posts.belongsToMany(user, { through: favorites, foreignKey: 'post_id' });
 
 //------------------------------------
 //----------- friend requests mohannad
@@ -236,8 +237,7 @@ module.exports = {
   notification: new Collection(notification),
   notificationModel: notification,
   chat: chat,
-  // favoritePosts : favoritePosts
-  favorites : new Collection(favorites),
+  favoritesCollection : new Collection(favorites),
   favorites : favorites,
   cv: new Collection(cv),
   joinRequests: joinrequest,

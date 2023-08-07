@@ -740,20 +740,47 @@ async function handleCreate(req, res) {
   let newRecord = await req.model.create(obj);
   res.status(201).json(newRecord);
 }
+// async function handleCreateLikes(req, res) {
+//   let obj = req.body;
+//   let userId=req.user.id;
+//   obj["user_id"]=userId
+//   // console.log(obj["user_id"])
+//   let checkPost= await likes.checkPostId(obj["post_id"],obj["user_id"])
+//   if(checkPost){
+//     res.status(201).json(" you\'ve liked this post");
+
+//   }else{
+
+//     let newRecord = await likes.create(obj);
+//     res.status(201).json(newRecord);
+//   }
+
+// }
+
 async function handleCreateLikes(req, res) {
-  let obj = req.body;
-  let userId = req.user.id;
-  obj.user_id = userId;
-  let checkPost = await likes.checkPostId(obj["post_id"]);
-  if (checkPost) {
-    res.status(201).json(" you've liked this post");
-    console.log(checkPost.user_id, userId, checkPost);
+  const obj = req.body;
+  const userId = req.user.id;
+  console.log(userId)
+  obj["user_id"] = userId;
+
+  // Check if the user has already liked the post
+  const existingLike = await likes.checkPostId(obj["post_id"],obj["user_id"] );
+  if (existingLike) {
+    res.status(400).json("You've already liked this post.");
   } else {
-    let newRecord = await likes.create(obj);
-    res.status(201).json(newRecord);
+    // Create a new like record
+    // try {
+      const newRecord = await likes.create(obj);
+      res.status(201).json(newRecord);
+    // } catch (error) {
+      // console.error(error);
+      // res.status(500).json("An error occurred while creating the like.");
+    // }
   }
 }
-// checkPost.user_id === userId
+
+
+
 async function handleUpdate(req, res) {
   const id = req.params.id;
   const obj = req.body;

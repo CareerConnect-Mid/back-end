@@ -25,12 +25,12 @@ const {
   friends,
   notification,
   favorites,
-  favorite,
   notificationModel,
   chat,
   cv,
   joinRequests,
   followers,
+  applyjob,
   employees,
 } = require("../models/index");
 
@@ -43,6 +43,24 @@ function welcomeHandler(req, res) {
 
 ////////////////////////////// Notification model
 router.get("/usernotification", bearerAuth, userNotifications);
+
+
+router.get("/favoriteposts", bearerAuth, getFavoritePosts);
+async function getFavoritePosts(req, res) {
+  try {
+    const userId = req.user.id;
+    
+    const favoritePosts = await favorites.findAll({
+      where: { user_id: userId }
+    });
+
+    res.status(200).json(favoritePosts);
+  } catch (error) {
+    console.error("Error fetching favorite posts:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+}
+
 
 async function userNotifications(req, res) {
   const userId = req.user.id;
@@ -624,6 +642,68 @@ async function viewMessages(req, res) {
 //------------------------Chat aljamal
 //------------------------------------------------------
 
+
+//------------------------------------------------------
+//----------------------- applying jobs aljamal
+router.post("/applyjob/:id", bearerAuth, applyJob);
+async function applyJob(req, res, next) {
+  try {
+
+      // check if the users exist
+    const jobid = req.params.id;
+    const job = await jobs.get(jobid);
+    const companyid = job.dataValues.user_id;
+    const company = await users.get(companyid);
+
+    if(req.user.role !== 'company' && company.dataValues.role == 'company'){  // check the id of the applyer for the job
+
+      // check if the users exist
+    const applyerid = req.user.dataValues.id; //from tocken
+    const applyer = await users.get(applyerid);
+      // console.log(applyer.dataValues.)
+    if (!company || !applyer) {
+      return res.status(404).json("User not found.");
+    }
+    // check if the request is already sent so that it doesnet dublicate
+    const existingApply = await applyjob.findOne({       
+      where: {
+        job_id: jobid,
+        applyer_id: applyerid
+      },
+    });
+
+    if (existingApply) {
+      return res.status(400).json("You are already apply to this job");
+    }
+
+    // create the new Join request
+    // Create a new Join request entry in the JoinRequest table
+    await applyjob.create({
+      job_id: jobid,
+      applyer_id: applyerid
+    });
+
+    return res
+      .status(200)
+      .json("You are apply to this job successfully.");
+    } 
+    else 
+    {
+      return res
+      .status(200)
+      .json("you don't have Permission");
+    }
+  } catch (error) {
+    next("an error occured, the Join request failed");
+  }
+}
+ 
+
+// the get in v3
+//------------------------applying jobs aljamal
+//------------------------------------------------------
+
+
 router.param("model", (req, res, next) => {
   const modelName = req.params.model;
   if (dataModules[modelName]) {
@@ -837,24 +917,22 @@ async function handleGetCVbyfield(req, res) {
   }
 }
 
-router.get("/favoriteposts", bearerAuth, getFavoritePosts);
-async function getFavoritePosts(req, res) {
-  try {
-    const userId = req.user.id;
-    const favoritePosts = await favorites.findAll({
-      where: { user_id: userId },
-      include: [{ model: posts }],
-    });
+// router.get("/favoriteposts", bearerAuth, getFavoritePosts);
+// async function getFavoritePosts(req, res) {
+//   try {
+//     const userId = req.user.id;
+//     const favoritePosts = await favorites.findAll({
+//       where: { user_id: userId },
+//       include: [{ model: posts }],
+//     });
 
-    res.status(200).json(favoritePosts);
-  } catch (error) {
-    console.error("Error fetching favorite posts:", error);
-    res.status(500).json({ message: "Internal server error." });
-  }
-
-}
+//     res.status(200).json(favoritePosts);
+//   } catch (error) {
+//     console.error("Error fetching favorite posts:", error);
+//     res.status(500).json({ message: "Internal server error." });
+//   }
+// }
 
 
 
 module.exports = router;
-

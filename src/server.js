@@ -176,7 +176,7 @@ io.on("connection", (socket) => {
 /*---------------------------------------------------------------------------------------- */
 
 module.exports = {
-  // server: app,
+  server: app,
   start: (port) => {
     server.listen(port, () => {
       console.log(`Server Up on ${port}`);

@@ -18,7 +18,7 @@ const JobsModel = (sequelize, DataTypes) =>
     job_field: {
       type: DataTypes.STRING(255),
     },
-    job_post_content: {
+   content: {
       type: DataTypes.STRING(255),
     },
   });

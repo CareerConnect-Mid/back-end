@@ -422,32 +422,37 @@ router.get("/company/employees", bearerAuth, getCompanyEmployees);
 async function getCompanyEmployees(req, res) {
   const companyId = req.user.id; // Assuming the user ID represents the company ID
 
-  // try {
-  // Find the company with the given companyId
-  const company = await userModel.findByPk(companyId);
-
-  if (!company) {
-    return res.status(404).json({ message: "Company not found" });
-  }
-
-  // Get all employees associated with the company along with user information
-  const companyEmployees = await employeesTable.findAll({
-    where: {
-      company_id: companyId,
-    },
-    include: [
-      {
-        model: userModel,
-        as: "employee",
+  try {
+    // Get all employees associated with the company along with specific user information
+    const companyEmployees = await employeesTable.findAll({
+      where: {
+        company_id: companyId,
       },
-    ],
-  });
+      include: [
+        {
+          model: userModel,
+          as: "employee",
+          attributes: ["id", "username", "career" ,"email", "address", "phoneNumber"],
+        },
+      ],
+    });
 
-  res.json({ company, employees: companyEmployees });
-  // } catch (error) {
-  //   res.status(500).json({ message: "Internal server error" });
-  // }
+    // Modify the response to include only desired fields
+    const simplifiedEmployees = companyEmployees.map((employee) => {
+      const { id, username, career, email, address, phoneNumber } = employee.employee;
+      return { id, username, career ,email, address, phoneNumber };
+    });
+
+    res.json(simplifiedEmployees);
+  } catch (error) {
+    console.error("Error retrieving company employees:", error);
+    return res.status(500).json({
+      message: "An error occurred while retrieving company employees.",
+    });
+  }
 }
+
+
 
 //------------------------JOIN requests routes aljamal
 //------------------------------------------------------
@@ -508,7 +513,7 @@ router.get("/followers", bearerAuth, viewFollowers);
 async function viewFollowers(req, res, next) {
   try {
     if (req.user.dataValues.role == "company") {
-      const receiverid = req.user.dataValues.id; //from tocken
+      const receiverid = req.user.dataValues.id; //from token
 
       const receivedFollowers = await followers.findAll({
         where: { receiver_id: receiverid },
@@ -521,20 +526,27 @@ async function viewFollowers(req, res, next) {
       });
 
       if (receivedFollowers.length === 0) {
-        return res.status(404).json("there is no followersto your company yet");
+        return res.status(404).json("there is no followers to your company yet");
       }
 
-      return res.status(200).json(receivedFollowers);
+      // Modify the response to include only user id and username
+      const simplifiedFollowers = receivedFollowers.map((follower) => ({
+        user_id: follower.sender.id,
+        username: follower.sender.username,
+      }));
+
+      return res.status(200).json(simplifiedFollowers);
     } else {
       return res.status(200).json("you don't have Permission");
     }
   } catch (error) {
-    console.error("Error retrieving received friend requests:", error);
+    console.error("Error retrieving received followers:", error);
     return res.status(500).json({
-      message: "An error occurred while retrieving received friend requests.",
+      message: "An error occurred while retrieving received followers.",
     });
   }
 }
+
 //------------------------Followers routes aljamal
 //------------------------------------------------------
 

@@ -3,9 +3,13 @@
 const postsModel = (sequelize, DataTypes) =>
   sequelize.define("posts", {
     user_id: { type: DataTypes.INTEGER, required: true },
-    paragraph_content: { type: DataTypes.STRING },
-    photo_content: { type: DataTypes.STRING },
-    status: { type: DataTypes.STRING },
+    content: { type: DataTypes.STRING },
+    photo: { type: DataTypes.STRING },
+    status: {
+      type: DataTypes.ENUM("public", "private"),
+      required: false,
+      defaultValue: "public",
+    },
 
    
   });

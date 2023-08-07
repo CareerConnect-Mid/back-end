@@ -36,7 +36,19 @@ authRouter.post("/signin", basicAuth, (req, res, next) => {
     next(e.message);
   }
 });
-
+authRouter.get("/profile", bearerAuth, async (req, res, next) => {
+  try {
+    const user = {
+      userName: req.user.username,
+      id: req.user.id,
+      token: req.user.token,
+      myRole: req.user.role,
+    };
+    res.status(200).json(user);
+  } catch (e) {
+    next(e); // Pass the error to the next middleware/error handler
+  }
+});
 authRouter.get(
   "/users",
   bearerAuth,

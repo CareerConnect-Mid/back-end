@@ -6,7 +6,7 @@ const readline = require("readline");
 
 const socket = io("http://localhost:3000");
 const token =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InNhdWRpIiwiaWQiOjEzLCJpYXQiOjE2OTEyNTMwODB9.NMrVVJ66HktOavsYr_VHZZLLICRDatPuuCDtwrBYvjU";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFobWVkIiwiaWQiOjgsImlhdCI6MTY5MTMwODY0NH0.QE7wv1pcxgtT7S2AUEj8FS1fO1prQ_2WDQ7PaeA6n0k";
 socket.on("connect", () => {
   console.log("Connected to Socket.IO server");
   socket.emit("sendToken", { token });
@@ -90,7 +90,7 @@ function sendMessage(receiverId) {
   });
 }
 
-const receiverId = 5; // Replace with the receiver's user ID
+const receiverId = 1; // Replace with the receiver's user ID
 sendMessage(receiverId);
 
 socket.on("newMessage", (data) => {

@@ -1,15 +1,19 @@
-const { posts } = require("../../models/index");
+const {
+  posts,
+  comments,
+  jobcomments,
+  userModel,
+} = require("../../models/index");
 
 module.exports = async (req, res, next) => {
   try {
-    const postId = await posts.get(req.params.id);
-    const postUserId = postId["dataValues"].user_id;
+    const model = await req.model.get(req.params.id);
+    const modelUserId = model["dataValues"].user_id;
     const userId = req.user.dataValues.id;
-
-    if (postUserId === userId) {
+    if (modelUserId === userId || model["dataValues"].id === userId) {
       next();
     } else {
-      next("u cannot update other posts");
+      next("you don't have permission");
     }
   } catch (error) {
     next("not allowed");

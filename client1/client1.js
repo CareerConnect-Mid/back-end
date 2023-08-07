@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 const socket = io("http://localhost:3000");
 const SECRET = "secretstring";
 const token =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFtYXIiLCJpZCI6NSwiaWF0IjoxNjkxMjQ4NTE4fQ.j3SZDbv7sCpzE9FvgqgzDkHe7kS5xzovL3wa3_des8A";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6Im1vaGFubmFkIiwiaWQiOjEsImlhdCI6MTY5MTMwODY2N30.M3bVdLQxXG2ekGBuSbzidib_qSSdzFCxh9TqbzxplHE";
 socket.on("connect", () => {
   console.log("Connected to Socket.IO server");
   socket.emit("sendToken", { token });
@@ -88,7 +88,7 @@ function sendMessage(receiverId) {
   });
 }
 
-const receiverId = 13; // Replace with the receiver's user ID
+const receiverId = 8; // Replace with the receiver's user ID
 sendMessage(receiverId);
 socket.on("newMessage", (data) => {
   console.log("there is a NEW message:\n", data);

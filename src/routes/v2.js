@@ -25,7 +25,6 @@ const {
   friends,
   notification,
   favorites,
-  favorite,
   notificationModel,
   chat,
   cv,
@@ -44,6 +43,22 @@ function welcomeHandler(req, res) {
 
 ////////////////////////////// Notification model
 router.get("/usernotification", bearerAuth, userNotifications);
+
+router.get("/favoriteposts", bearerAuth, getFavoritePosts);
+async function getFavoritePosts(req, res) {
+  try {
+    const userId = req.user.id;
+
+    const favoritePosts = await favorites.findAll({
+      where: { user_id: userId },
+    });
+
+    res.status(200).json(favoritePosts);
+  } catch (error) {
+    console.error("Error fetching favorite posts:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+}
 
 async function userNotifications(req, res) {
   const userId = req.user.id;
@@ -726,16 +741,16 @@ async function userRecords(req, res) {
   res.status(200).json(userRecord);
 }
 
-async function jobComments(req, res) {
-  const jobId = parseInt(req.params.id);
-  let jcomments = await jobs.getUserPosts(jobId, jobcomments.model);
-  res.status(200).json(jcomments);
-}
-async function postComments(req, res) {
-  const postId = parseInt(req.params.id);
-  let pcomments = await posts.getUserPosts(postId, comments.model);
-  res.status(200).json(pcomments);
-}
+// async function jobComments(req, res) {
+//   const jobId = parseInt(req.params.id);
+//   let jcomments = await jobs.getUserPosts(jobId, jobcomments.model);
+//   res.status(200).json(jcomments);
+// }
+// async function postComments(req, res) {
+//   const postId = parseInt(req.params.id);
+//   let pcomments = await posts.getUserPosts(postId, comments.model);
+//   res.status(200).json(pcomments);
+// }
 
 async function handleGetAll(req, res) {
   let allRecords = await req.model.get();
@@ -761,7 +776,7 @@ async function handleCreateLikes(req, res) {
   obj.user_id = userId;
   let checkPost = await likes.checkPostId(obj["post_id"]);
   if (checkPost) {
-    res.status(201).json(" you/'ve liked this post");
+    res.status(201).json(" you've liked this post");
   } else {
     let newRecord = await likes.create(obj);
     res.status(201).json(newRecord);
@@ -881,20 +896,20 @@ async function handleGetCVbyfield(req, res) {
   }
 }
 
-router.get("/favoriteposts", bearerAuth, getFavoritePosts);
-async function getFavoritePosts(req, res) {
-  try {
-    const userId = req.user.id;
-    const favoritePosts = await favorites.findAll({
-      where: { user_id: userId },
-      include: [{ model: posts }],
-    });
+// router.get("/favoriteposts", bearerAuth, getFavoritePosts);
+// async function getFavoritePosts(req, res) {
+//   try {
+//     const userId = req.user.id;
+//     const favoritePosts = await favorites.findAll({
+//       where: { user_id: userId },
+//       include: [{ model: posts }],
+//     });
 
-    res.status(200).json(favoritePosts);
-  } catch (error) {
-    console.error("Error fetching favorite posts:", error);
-    res.status(500).json({ message: "Internal server error." });
-  }
-}
+//     res.status(200).json(favoritePosts);
+//   } catch (error) {
+//     console.error("Error fetching favorite posts:", error);
+//     res.status(500).json({ message: "Internal server error." });
+//   }
+// }
 
 module.exports = router;

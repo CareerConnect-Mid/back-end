@@ -45,13 +45,16 @@ function welcomeHandler(req, res) {
 router.get("/usernotification", bearerAuth, userNotifications);
 async function userNotifications(req, res) {
   const userId = req.user.id;
+  let username= req.user.username;
+ 
+ 
 
   let notifications = await notificationModel.findAll({
     where: {
       receiver_id: userId,
     },
   });
-
+notification.username=username;
   res.status(200).json(notifications);
 }
 
@@ -976,6 +979,7 @@ async function userRecords(req, res) {
 
 async function handleGetAll(req, res) {
   let allRecords = await req.model.get();
+  
   res.status(200).json(allRecords);
 }
 
@@ -988,7 +992,10 @@ async function handleGetOne(req, res) {
 async function handleCreate(req, res) {
   let obj = req.body;
   let userId = req.user.id;
+  let username= req.user.username;
   obj.user_id = userId;
+  obj.username=username;
+  console.log(obj)
   let newRecord = await req.model.create(obj);
   res.status(201).json(newRecord);
 }
@@ -1010,8 +1017,11 @@ async function handleCreate(req, res) {
 // }
 
 async function handleCreateLikes(req, res) {
-  const obj = req.body;
-  const userId = req.user.id;
+  let obj = req.body;
+  let userId = req.user.id;
+  let username= req.user.username;
+  obj.user_id = userId;
+  obj.username=username;
   console.log(userId)
   obj["user_id"] = userId;
 

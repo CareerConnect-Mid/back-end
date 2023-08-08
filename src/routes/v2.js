@@ -735,6 +735,7 @@ async function viewFollowersbyId(req, res, next) {
         ],
       });
 
+      /////
       const company = await userModel.findOne({
         where: {id: receiverid}
       })

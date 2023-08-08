@@ -51,9 +51,9 @@ async getJobTitle(job_title,model){
   })
   return record
 }
-async checkJobPostId(job_id,model){
+async checkJobPostId(job_id, user_id,model){
   let record= await this.model.findOne({
-    where:{job_id},
+    where:{job_id, user_id},
     include: model
   })
   return record

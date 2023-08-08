@@ -869,8 +869,9 @@ async function applyJob(req, res, next) {
     const job = await jobs.get(jobid);
     const companyid = job.dataValues.user_id;
     const company = await users.get(companyid);
+    console.log("----------------------------------------------------------->",company)
 
-    if (req.user.role !== "company" && company.dataValues.role == "company") {
+    if (req.user.role !== "company") {
       // check the id of the applyer for the job
 
       // check if the users exist

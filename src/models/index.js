@@ -159,16 +159,6 @@ joinrequest.belongsTo(user, { foreignKey: "receiver_id", as: "receiver" });
 const employeesTable = employees(sequelize, DataTypes);
 const EmployeeUser = employeeUserModel(sequelize, DataTypes);
 const chatRoomTable = chatRoom(sequelize, DataTypes);
-// employeesTable.belongsToMany(user, {
-//   through: EmployeeUser,
-//   foreignKey: "employee_id",
-//   as: "employee",
-// });
-// user.belongsToMany(employeesTable, {
-//   through: EmployeeUser,
-//   foreignKey: "company_id",
-//   as: "companyEmployee",
-// });
 
 user.hasMany(employeesTable, { foreignKey: "employee_id", as: "employee" });
 employeesTable.belongsTo(user, { foreignKey: "employee_id", as: "employee" });
@@ -241,6 +231,7 @@ module.exports = {
   users: new Collection(user),
   jobcomments: new Collection(jobcomments),
   jobs: new Collection(jobs),
+  jobsTable: jobs,
   userModel: user,
   likes: new Collection(like),
   friendRequests: friendRequests,

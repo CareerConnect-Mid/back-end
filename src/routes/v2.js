@@ -32,6 +32,8 @@ const {
   followers,
   applyjob,
   employeesTable,
+  jobsTable,
+  chatRoomTable,
 } = require("../models/index");
 
 const router = express.Router();
@@ -604,6 +606,74 @@ async function viewMessages(req, res) {
 //------------------------Chat aljamal
 //------------------------------------------------------
 
+router.get("/companychat", bearerAuth, async (req, res) => {
+  try {
+    const userId = req.user.id; // Assuming user ID is available in the request
+
+    // Retrieve the user's role to determine if they are a company or employee
+    const user = await userModel.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    let companyId;
+    if (user.role === "company") {
+      // If the user is a company, use their own company ID
+      companyId = user.id;
+    } else {
+      // If the user is an employee, get their associated company ID
+      const employeeRecord = await employeesTable.findOne({
+        where: {
+          employee_id: userId,
+        },
+      });
+
+      if (!employeeRecord) {
+        return res.status(404).json({ message: "Employee record not found." });
+      }
+      companyId = employeeRecord.company_id;
+    }
+
+    // Retrieve messages from private rooms where the user's company is the sender
+    const privateRoomMessages = await chatRoomTable.findAll({
+      where: {
+        roomType: "announcements",
+        senderId: companyId,
+      },
+      include: [
+        {
+          model: userModel,
+          as: "senderInfo",
+          attributes: ["username"],
+        },
+      ],
+      order: [["createdAt", "ASC"]],
+    });
+
+    // Retrieve messages from the general room of the user's company
+    const generalRoomName = `company-${companyId}-general`;
+    const generalRoomMessages = await chatRoomTable.findAll({
+      where: {
+        room: generalRoomName,
+      },
+      include: [
+        {
+          model: userModel,
+          as: "senderInfo",
+          attributes: ["username"],
+        },
+      ],
+      order: [["createdAt", "ASC"]],
+    });
+
+    return res.json({ privateRoomMessages, generalRoomMessages });
+  } catch (error) {
+    console.error("Error fetching messages:", error);
+    return res
+      .status(500)
+      .json({ message: "An error occurred while fetching messages." });
+  }
+});
 //------------------------------------------------------
 //----------------------- applying jobs aljamal
 router.post("/applyjob/:id", bearerAuth, applyJob);
@@ -644,7 +714,7 @@ async function applyJob(req, res, next) {
         applyer_id: applyerid,
       });
 
-      return res.status(200).json("You are apply to this job successfully.");
+      return res.status(200).json("You applied to this job successfully.");
     } else {
       return res.status(200).json("you don't have Permission");
     }
@@ -655,6 +725,173 @@ async function applyJob(req, res, next) {
 
 // the get in v3
 //------------------------applying jobs aljamal
+
+router.get("/applicants/:jobId", bearerAuth, async (req, res) => {
+  try {
+    // Check if the user is a company
+    if (req.user.role !== "company") {
+      return res
+        .status(403)
+        .json({ message: "You don't have permission to perform this action." });
+    }
+
+    const jobId = req.params.jobId;
+
+    // Find the job in the database
+    const job = await jobsTable.findOne({
+      where: {
+        id: jobId,
+        user_id: req.user.id, // Make sure the requesting company owns the job
+      },
+    });
+
+    if (!job) {
+      return res.status(404).json({ message: "Job not found." });
+    }
+
+    // Find all job applications for the specified job
+    const applicants = await applyjob.findAll({
+      where: {
+        job_id: jobId,
+      },
+      include: [
+        {
+          model: userModel,
+          as: "user",
+          attributes: [
+            "username",
+            "firstName",
+            "lastName",
+            "email",
+            "profilePicture",
+          ],
+        },
+      ],
+    });
+
+    if (!applicants || applicants.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No applicants found for this job." });
+    }
+
+    return res.json({ applicants });
+  } catch (error) {
+    console.error("Error fetching applicants:", error);
+    return res
+      .status(500)
+      .json({ message: "An error occurred while fetching applicants." });
+  }
+});
+// aply job responce
+
+router.post("/jobresponse/:id", bearerAuth, jobResponse);
+async function jobResponse(req, res, next) {
+  // try {
+  // Check if the user is a company
+  if (req.user.role !== "company") {
+    return res
+      .status(403)
+      .json({ message: "You don't have permission to perform this action." });
+  }
+
+  // Get the job application ID from the request parameters
+  const applicationId = req.params.id;
+
+  // Find the job application in the database
+  const application = await applyjob.findOne({
+    where: {
+      id: applicationId,
+    },
+    include: [
+      {
+        model: jobsTable,
+        as: "job",
+        attributes: ["user_id"], // Include the job's user_id to check if the company owns the job
+      },
+    ],
+  });
+
+  if (!application) {
+    return res.status(404).json({ message: "Job application not found." });
+  }
+
+  // Check if the job application is for a job posted by the company
+  const job = application.job;
+  if (!job || job.user_id !== req.user.id) {
+    return res.status(403).json({
+      message: "You don't have permission to respond to this job application.",
+    });
+  }
+
+  // Get the company's response from the request body
+  const { status, interviewDate, interviewLocation, rejectionReason } =
+    req.body;
+
+  // Update the job application with the company's response
+  application.status = status;
+  application.interviewDate = interviewDate;
+  application.interviewLocation = interviewLocation;
+  application.rejectionReason = rejectionReason;
+  await application.save();
+
+  return res
+    .status(200)
+    .json({ message: "Job application response updated successfully." });
+  //   } catch (error) {
+  //     next("An error occurred while updating the job application response.");
+  //   }
+}
+
+router.get("/applicationStatus/", bearerAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Find all job applications made by the authenticated user
+    const applications = await applyjob.findAll({
+      where: {
+        applyer_id: userId,
+      },
+      include: [
+        {
+          model: jobsTable,
+          as: "job",
+          attributes: ["job_title"],
+        },
+      ],
+      attributes: [
+        "id",
+        "status",
+        "interviewDate", // Include interview date
+        "interviewLocation",
+      ], // Include interview location], // Include the application ID and status
+    });
+
+    if (!applications || applications.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No job applications found for this user." });
+    }
+
+    // Transform the applications data if needed
+    const transformedApplications = applications.map((application) => {
+      return {
+        applicationId: application.id,
+        jobTitle: application.job.job_title,
+        status: application.status,
+        interviewDate: application.interviewDate,
+        interviewLocation: application.interviewLocation,
+      };
+    });
+
+    return res.json({ applications: transformedApplications });
+  } catch (error) {
+    console.error("Error fetching job application status:", error);
+    return res.status(500).json({
+      message: "An error occurred while fetching job application status.",
+    });
+  }
+});
 //------------------------------------------------------
 
 router.param("model", (req, res, next) => {

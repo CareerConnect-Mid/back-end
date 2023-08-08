@@ -1,11 +1,18 @@
 "use strict";
 //-------------------------------------------------------------------------------- applyJob table aljamal
-const applyJob = (sequelize, DataTypes) =>
+const applyJobModel = (sequelize, DataTypes) =>
   sequelize.define("applyJob ", {
-    job_id: { type: DataTypes.INTEGER},
-    applyer_id: { type: DataTypes.INTEGER},
-    cv_link:  { type: DataTypes.STRING}
+    job_id: { type: DataTypes.INTEGER },
+    applyer_id: { type: DataTypes.INTEGER },
+    cv_link: { type: DataTypes.STRING },
+    status: {
+      type: DataTypes.ENUM("pending", "rejected", "interview"),
+      defaultValue: "pending",
+    },
+    interviewDate: { type: DataTypes.DATE },
+    interviewLocation: { type: DataTypes.STRING },
+    rejectionReason: { type: DataTypes.STRING },
   });
 
-module.exports = applyJob;
+module.exports = applyJobModel;
 //-------------------------------------------------------------------------------- applyJob table aljamal

@@ -81,8 +81,11 @@ async function handleGetTitle(req, res) {
 // }
 
 async function handleCreateLikes(req, res) {
-  const obj = req.body;
-  const userId = req.user.id;
+  let obj = req.body;
+  let userId = req.user.id;
+  let username= req.user.username;
+  obj.user_id = userId;
+  obj.username=username;
   console.log(userId)
   obj["user_id"] = userId;
 
@@ -130,7 +133,9 @@ async function jobComments(req, res) {
 async function handleCreate(req, res) {
   let obj = req.body;
   let userId = req.user.id;
+  let username= req.user.username;
   obj.user_id = userId;
+  obj.username=username;
   let newRecord = await jobs.create(obj);
   res.status(201).json(newRecord);
 }

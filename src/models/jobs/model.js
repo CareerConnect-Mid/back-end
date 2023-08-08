@@ -6,6 +6,7 @@ const JobsModel = (sequelize, DataTypes) =>
       type: DataTypes.INTEGER,
       allowNull: false,
     },
+    username:{type:DataTypes.STRING},
     job_title: {
       type: DataTypes.STRING(255),
       set(value) {

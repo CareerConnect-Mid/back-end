@@ -4,6 +4,7 @@ const Likes = (Sequelize, DataTypes) =>
       type: DataTypes.INTEGER,
       allowNull: false,
     },
+    username: { type: DataTypes.STRING },
     user_id: {
       type: DataTypes.INTEGER,
       allowNull: false,

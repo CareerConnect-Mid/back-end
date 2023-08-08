@@ -321,6 +321,7 @@ async function handleFriendRequest(req, res) {
   const friendRequest = await friendRequests.findOne({
     where: {
       sender_id: senderid,
+      receiver_id: userId
     },
   });
   if (!friendRequest) {
@@ -416,6 +417,7 @@ async function handleJoinRequest(req, res) {
   const joinRequest = await joinRequests.findOne({
     where: {
       sender_id: senderid,
+      receiver_id: userId
     },
   });
   if (!joinRequest) {

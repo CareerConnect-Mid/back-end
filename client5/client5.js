@@ -8,7 +8,7 @@ const serverURL = "http://localhost:3000";
 
 // Replace with your JWT token
 const token =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFtYXpvbiIsImlkIjozLCJpYXQiOjE2OTE0OTIxMzN9.V-oqNeXNRxJWFDQbg9PWuU2nb4thq0TF8Re-S2X2-CA";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFobWVkIiwiaWQiOjUsImlhdCI6MTY5MTQ5MjEzM30.09xMaxwSI1JQRxlilEGIwy2cGoR0qTD9zro3p_Ou_QQ";
 
 const parsedToken = jwt.verify(token, SECRET);
 const userId = parsedToken.id;

@@ -188,7 +188,7 @@ io.on("connection", (socket) => {
       });
 
       // Return true if the user is an employee, otherwise false
-      return !!employee;
+      return !!employee || userId == companyId;
     } catch (error) {
       console.error("Error checking if user is an employee:", error);
       return false; // Return false in case of an error
@@ -215,7 +215,7 @@ io.on("connection", (socket) => {
   socket.on("joinCompanyRoom", async (data) => {
     // Verify if the user is an employee of the company
     const Employee = await isEmployee(data.userId, data.companyId);
-
+    console.log(data.userId, data.companyId, data.roomType);
     if (!Employee) {
       // If the user is not an employee, emit an error message to the client
       socket.emit("errorMessage", {
@@ -224,8 +224,8 @@ io.on("connection", (socket) => {
       return;
     }
 
-    const roomName = `company-${companyId}-${roomType}`;
-
+    const roomName = `company-${data.companyId}-${data.roomType}`;
+    console.log(roomName);
     // Add the user to the company room
     socket.join(roomName);
   });
@@ -233,7 +233,7 @@ io.on("connection", (socket) => {
   socket.on("sendMessage", async (data) => {
     try {
       const roomName = `company-${data.companyId}-${data.roomType}`;
-
+      console.log(roomName);
       // Check if the user has joined the room
       if (!socket.rooms.has(roomName)) {
         // If the user has not joined the room, emit an error message to the client
@@ -244,7 +244,7 @@ io.on("connection", (socket) => {
       }
 
       // If the room is private (announcements), check if the user is the company user
-      if (roomType === "announcements") {
+      if (data.roomType === "announcements") {
         // Check if the user is the company user and has the same company ID as the room
         const CompanyUser = await isCompanyUser(data.userId, data.companyId);
 
@@ -261,14 +261,15 @@ io.on("connection", (socket) => {
       await chatRoomTable.create({
         room: roomName,
         roomType: data.roomType,
-        message: data.message,
+        message: "data.message",
         senderId: data.userId, // Assuming you have set the user ID on the socket object after authentication
       });
 
       // Broadcast the message to all users in the room
-      socket.broadcast
-        .to(roomName)
-        .emit("messageReceived", { message, senderId: data.userId });
+      socket.broadcast.to(roomName).emit("messageReceived", {
+        message: data.message,
+        senderId: data.userId,
+      });
     } catch (error) {
       console.error("Error sending message:", error);
     }

@@ -8,12 +8,11 @@ const serverURL = "http://localhost:3000";
 
 // Replace with your JWT token
 const token =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFtYXpvbiIsImlkIjozLCJpYXQiOjE2OTE0OTIxMzN9.V-oqNeXNRxJWFDQbg9PWuU2nb4thq0TF8Re-S2X2-CA";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6Im1vaGFubmFkIiwiaWQiOjIsImlhdCI6MTY5MTQ5MjEzM30.61btwrhQ_jx5KjoMmwdiTTESkVZH5RVkIX9jDyRCS2w";
 
 const parsedToken = jwt.verify(token, SECRET);
 const userId = parsedToken.id;
 const companyId = 3;
-
 const socket = io(serverURL);
 
 socket.on("connect", () => {

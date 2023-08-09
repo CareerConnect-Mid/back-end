@@ -106,6 +106,14 @@ async getJobApplyer(id, model) {
 }
 
 
+async getCv(id) {
+  let record = await this.model.findOne({
+      where: { user_id:id },
+  });
+  return record;
+}
+
+
 }
 
 module.exports = DataCollection;

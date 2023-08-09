@@ -228,6 +228,7 @@ async function sendFriendRequest(req, res) {
       sender_id: userId,
       username: username,
       receiver_id: friendId,
+      message:`${username} sent you a friend request`
     });
     return res
       .status(200)
@@ -423,7 +424,7 @@ async function handleJoinRequest(req, res) {
     },
   });
   if (!joinRequest) {
-    return res.status(404).json({ message: "Friend request not found." });
+    return res.status(404).json({ message: "join request not found." });
   }
 
   if (action === "accept") {
@@ -936,6 +937,7 @@ router.post("/applyjob/:id", bearerAuth, applyJob);
 async function applyJob(req, res, next) {
   try {
     // check if the users exist
+    const userCv= await cv.getCv(req.user.id)
     const jobid = req.params.id;
     const job = await jobs.get(jobid);
     const companyid = job.dataValues.user_id;
@@ -971,6 +973,7 @@ async function applyJob(req, res, next) {
       // Create a new Join request entry in the JoinRequest table
       await applyjob.create({
         job_id: jobid,
+        cv_link:userCv.cv_link,
         applyer_id: applyerid,
         company_name: company.username,
       });

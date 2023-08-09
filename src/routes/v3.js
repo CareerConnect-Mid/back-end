@@ -83,24 +83,27 @@ async function handleGetTitle(req, res) {
 async function handleCreateLikes(req, res) {
   let obj = req.body;
   let userId = req.user.id;
-  let username= req.user.username;
+  let username = req.user.username;
   obj.user_id = userId;
-  obj.username=username;
-  console.log(userId)
+  obj.username = username;
+  console.log(userId);
   obj["user_id"] = userId;
 
   // Check if the user has already liked the post
-  const existingLike = await joblike.checkJobPostId(obj["job_id"],obj["user_id"] );
+  const existingLike = await joblike.checkJobPostId(
+    obj["job_id"],
+    obj["user_id"]
+  );
   if (existingLike) {
     res.status(400).json("You've already liked this post.");
   } else {
     // Create a new like record
     // try {
-      const newRecord = await joblike.create(obj);
-      res.status(201).json(newRecord);
+    const newRecord = await joblike.create(obj);
+    res.status(201).json(newRecord);
     // } catch (error) {
-      // console.error(error);
-      // res.status(500).json("An error occurred while creating the like.");
+    // console.error(error);
+    // res.status(500).json("An error occurred while creating the like.");
     // }
   }
 }
@@ -114,7 +117,9 @@ async function postLikes(req, res) {
 async function handleCommentsCreate(req, res) {
   let obj = req.body;
   let userId = req.user.id;
+  let username = req.user.username;
   obj.user_id = userId;
+  obj.username = username;
   let newRecord = await jobcomments.create(obj);
   res.status(201).json(newRecord);
 }
@@ -133,9 +138,9 @@ async function jobComments(req, res) {
 async function handleCreate(req, res) {
   let obj = req.body;
   let userId = req.user.id;
-  let username= req.user.username;
+  let username = req.user.username;
   obj.user_id = userId;
-  obj.username=username;
+  obj.company_name = username;
   let newRecord = await jobs.create(obj);
   res.status(201).json(newRecord);
 }

@@ -47,16 +47,14 @@ function welcomeHandler(req, res) {
 router.get("/usernotification", bearerAuth, userNotifications);
 async function userNotifications(req, res) {
   const userId = req.user.id;
-  let username= req.user.username;
- 
- 
+  let username = req.user.username;
 
   let notifications = await notificationModel.findAll({
     where: {
       receiver_id: userId,
     },
   });
-notification.username=username;
+  notification.username = username;
   res.status(200).json(notifications);
 }
 
@@ -82,7 +80,6 @@ async function getFavoritePosts(req, res) {
 router.get("/homeposts", bearerAuth, handleShowHomePosts);
 
 async function handleShowHomePosts(req, res) {
-
   try {
     const userId = req.user.id;
     const myfriends = await friends.findAll({
@@ -94,7 +91,7 @@ async function handleShowHomePosts(req, res) {
 
     // Extract friend IDs from the result and send the response
     const friendIds = myfriends.map((friend) => friend.friend_id);
-    
+
     ///////////////////////////////
     const myCompany = await followers.findAll({
       // attributes: ["friend_id"],
@@ -109,7 +106,11 @@ async function handleShowHomePosts(req, res) {
     // Fetch private posts of yourself and your friends
     const homePosts = await postsModel.findAll({
       where: {
-        [Op.or]: [{ user_id: userId }, { user_id: { [Op.in]: friendIds } }, { user_id: { [Op.in]: companyIds } }],
+        [Op.or]: [
+          { user_id: userId },
+          { user_id: { [Op.in]: friendIds } },
+          { user_id: { [Op.in]: companyIds } },
+        ],
       },
     });
 
@@ -133,16 +134,15 @@ async function handleShowHomePosts(req, res) {
 router.get("/userposts/:id", bearerAuth, handleShowUserPosts);
 
 async function handleShowUserPosts(req, res) {
-
   try {
     const userId = req.user.id;
     const myfriends = await friends.findOne({
       attributes: ["friend_id"],
-      where: { 
+      where: {
         [Op.or]: [
-        {user_id: userId, friend_id: req.params.id},
-        { user_id: req.params.id, friend_id: userId }
-      ]
+          { user_id: userId, friend_id: req.params.id },
+          { user_id: req.params.id, friend_id: userId },
+        ],
       },
     });
 
@@ -150,15 +150,14 @@ async function handleShowUserPosts(req, res) {
     //   where: { user_id: req.params.id , status: "public" },
     // });
 
-    if(myfriends || req.user.id == req.params.id){
+    if (myfriends || req.user.id == req.params.id) {
       const userPosts = await postsModel.findAll({
         where: { user_id: req.params.id },
       });
       res.status(200).json(userPosts);
-    } 
-    else {
+    } else {
       const userPosts = await postsModel.findAll({
-        where: { user_id: req.params.id , status: "public" },
+        where: { user_id: req.params.id, status: "public" },
       });
       res.status(200).json(userPosts);
     }
@@ -170,13 +169,14 @@ async function handleShowUserPosts(req, res) {
   }
 }
 
-
 ///////////////////////////////////////////////////////////////////////// private and public posts motasem
 //------------------------------------------------------
 //-----------------------friend requests routes mohannad
 router.post("/send-friend-request/:id", bearerAuth, sendFriendRequest);
 async function sendFriendRequest(req, res) {
   const userId = req.user.id;
+  let username = req.user.username;
+
   const friendId = req.params.id;
   try {
     const user = await userModel.findByPk(userId);
@@ -224,7 +224,11 @@ async function sendFriendRequest(req, res) {
       });
     }
     // Create a new friend request
-    await friendRequests.create({ sender_id: userId, receiver_id: friendId });
+    await friendRequests.create({
+      sender_id: userId,
+      username: username,
+      receiver_id: friendId,
+    });
     return res
       .status(200)
       .json({ message: "Friend request sent successfully." });
@@ -323,7 +327,7 @@ async function handleFriendRequest(req, res) {
   const friendRequest = await friendRequests.findOne({
     where: {
       sender_id: senderid,
-      receiver_id: userId
+      receiver_id: userId,
     },
   });
   if (!friendRequest) {
@@ -353,55 +357,51 @@ async function handleFriendRequest(req, res) {
   });
 }
 
-
 router.delete("/unfriend/:id", bearerAuth, handleDeleteFriend);
 
 async function handleDeleteFriend(req, res) {
-
-  try{
+  try {
     const friendid = req.params.id;
     const userid = req.user.id;
 
     const checkFriend = await friends.findOne({
       where: {
-              [Sequelize.Op.or]: [
-                { user_id: userid, friend_id: friendid },
-                { user_id: friendid, friend_id: userid },
-              ],
-            },
-    })
+        [Sequelize.Op.or]: [
+          { user_id: userid, friend_id: friendid },
+          { user_id: friendid, friend_id: userid },
+        ],
+      },
+    });
 
-    if(!checkFriend){
+    if (!checkFriend) {
       return res.status(200).json("You are not friends yet");
-
     }
 
     const unFriend = await friends.destroy({
-    where: {
-      [Sequelize.Op.or]: [
-        { user_id: userid, friend_id: friendid },
-        { user_id: friendid, friend_id: userid },
-      ],
-    },
-  })
+      where: {
+        [Sequelize.Op.or]: [
+          { user_id: userid, friend_id: friendid },
+          { user_id: friendid, friend_id: userid },
+        ],
+      },
+    });
 
-  const deleteFriendsReq = await friendRequests.destroy({
-    where: {
-      [Sequelize.Op.or]: [
-        { receiver_id: userid, sender_id: friendid },
-        { receiver_id: friendid, sender_id: userid },
-      ],
-    },
-  })
+    const deleteFriendsReq = await friendRequests.destroy({
+      where: {
+        [Sequelize.Op.or]: [
+          { receiver_id: userid, sender_id: friendid },
+          { receiver_id: friendid, sender_id: userid },
+        ],
+      },
+    });
 
-    return res.status(200).json("deleted successfully");
-
+    return res.status(200).json("unfriended successfully");
   } catch (error) {
     console.error("Error retrieving received friend requests:", error);
     return res.status(500).json({
-    message: "An error occurred while retrieving received friend requests.",
-  });
-}
+      message: "An error occurred while retrieving received friend requests.",
+    });
+  }
 }
 
 //------------------------friend requests routes mohannad
@@ -419,7 +419,7 @@ async function handleJoinRequest(req, res) {
   const joinRequest = await joinRequests.findOne({
     where: {
       sender_id: senderid,
-      receiver_id: userId
+      receiver_id: userId,
     },
   });
   if (!joinRequest) {
@@ -465,6 +465,8 @@ async function SendJoinRequest(req, res, next) {
     // check if the users exist
     const receiverid = req.params.id;
     const receiver = await users.get(receiverid);
+    const { employee_code } = req.body;
+    let username = req.user.username;
     console.log(receiverid, receiver);
     if (req.user.role !== "company" && receiver.dataValues.role == "company") {
       // check if the users exist
@@ -490,6 +492,8 @@ async function SendJoinRequest(req, res, next) {
       // Create a new Join request entry in the JoinRequest table
       await joinRequests.create({
         sender_id: senderid,
+        username: username,
+        employee_code: employee_code,
         receiver_id: receiverid,
         message: `you have a join request from ${sender.dataValues.username}`,
       });
@@ -544,15 +548,23 @@ async function getCompanyEmployees(req, res) {
         {
           model: userModel,
           as: "employee",
-          attributes: ["id", "username", "career" ,"email", "address", "phoneNumber"],
+          attributes: [
+            "id",
+            "username",
+            "career",
+            "email",
+            "address",
+            "phoneNumber",
+          ],
         },
       ],
     });
 
     // Modify the response to include only desired fields
     const simplifiedEmployees = companyEmployees.map((employee) => {
-      const { id, username, career, email, address, phoneNumber } = employee.employee;
-      return { id, username, career ,email, address, phoneNumber };
+      const { id, username, career, email, address, phoneNumber } =
+        employee.employee;
+      return { id, username, career, email, address, phoneNumber };
     });
 
     res.json(simplifiedEmployees);
@@ -567,67 +579,57 @@ async function getCompanyEmployees(req, res) {
 router.delete("/unjoin/:id", bearerAuth, handleDeleteJoin);
 
 async function handleDeleteJoin(req, res) {
-
-  try{
+  try {
     const companyid = req.params.id;
     const employedid = req.user.id;
 
     const checkJoin = await employeesTable.findOne({
       where: {
-              [Sequelize.Op.or]: [
-                { company_id: companyid, employee_id: employedid },
-                { company_id: employedid, employee_id: companyid },
-              ],
-            },
-    })
-    
-    if(!checkJoin){
+        [Sequelize.Op.or]: [
+          { company_id: companyid, employee_id: employedid },
+          { company_id: employedid, employee_id: companyid },
+        ],
+      },
+    });
+
+    if (!checkJoin) {
       return res.status(200).json("You are not employee in this company");
     }
-  
+
     const unJoin = await employeesTable.destroy({
-    where: {
-      [Sequelize.Op.or]: [
-        { employee_id: companyid, company_id: employedid },
-        { employee_id: employedid, company_id: companyid },
-      ],
-    },
-  })
+      where: {
+        [Sequelize.Op.or]: [
+          { employee_id: companyid, company_id: employedid },
+          { employee_id: employedid, company_id: companyid },
+        ],
+      },
+    });
 
-  const deleteJoinReq = await joinRequests.destroy({
-    where: {
-      [Sequelize.Op.or]: [
-        { receiver_id: companyid, sender_id: employedid },
-        { receiver_id: employedid, sender_id: companyid },
-      ],
-    },
-  })
+    const deleteJoinReq = await joinRequests.destroy({
+      where: {
+        [Sequelize.Op.or]: [
+          { receiver_id: companyid, sender_id: employedid },
+          { receiver_id: employedid, sender_id: companyid },
+        ],
+      },
+    });
 
-  
-
-  
     await userModel.update(
       { employed: false },
       {
         where: {
-          [Sequelize.Op.or]: [
-            { id: companyid},
-            { id: employedid,},
-          ],
+          [Sequelize.Op.or]: [{ id: companyid }, { id: employedid }],
         },
       }
     );
-  
-  
 
-    return res.status(200).json("deleted successfully");
-
+    return res.status(200).json("unjoined successfully");
   } catch (error) {
     console.error("Error retrieving received join requests:", error);
     return res.status(500).json({
-    message: "An error occurred while retrieving received join requests.",
-  });
-}
+      message: "An error occurred while retrieving received join requests.",
+    });
+  }
 }
 
 //------------------------JOIN requests routes aljamal
@@ -702,7 +704,9 @@ async function viewFollowers(req, res, next) {
       });
 
       if (receivedFollowers.length === 0) {
-        return res.status(404).json("there is no followers to your company yet");
+        return res
+          .status(404)
+          .json("there is no followers to your company yet");
       }
 
       // Modify the response to include only user id and username
@@ -723,33 +727,34 @@ async function viewFollowers(req, res, next) {
   }
 }
 
-
 router.get("/followers/:id", bearerAuth, viewFollowersbyId);
 async function viewFollowersbyId(req, res, next) {
   try {
     // if (req.user.dataValues.role == "company") {
-      const receiverid = req.params.id; //from tocken
+    const receiverid = req.params.id; //from tocken
 
-      const receivedFollowers = await followers.findAll({
-        where: { receiver_id: receiverid },
-        include: [
-          {
-            model: userModel,
-            as: "sender",
-          },
-        ],
-      });
+    const receivedFollowers = await followers.findAll({
+      where: { receiver_id: receiverid },
+      include: [
+        {
+          model: userModel,
+          as: "sender",
+        },
+      ],
+    });
 
-      /////
-      const company = await userModel.findOne({
-        where: {id: receiverid}
-      })
+    /////
+    const company = await userModel.findOne({
+      where: { id: receiverid },
+    });
 
-      if (receivedFollowers.length === 0) {
-        return res.status(404).json(`there is no followers to ${company.username} company yet`);
-      }
+    if (receivedFollowers.length === 0) {
+      return res
+        .status(404)
+        .json(`there is no followers to ${company.username} company yet`);
+    }
 
-      return res.status(200).json(receivedFollowers);
+    return res.status(200).json(receivedFollowers);
     // } else {
     //   return res.status(200).json("you don't have Permission");
     // }
@@ -761,35 +766,31 @@ async function viewFollowersbyId(req, res, next) {
   }
 }
 
-
 router.delete("/unfollow/:id", bearerAuth, handleDeleteFollow);
 
 async function handleDeleteFollow(req, res) {
-
-  try{
+  try {
     const receiverid = req.params.id;
     const senderid = req.user.id;
 
     const checkFollow = await followers.findOne({
-      where: {sender_id: senderid, receiver_id: receiverid}
-    })
+      where: { sender_id: senderid, receiver_id: receiverid },
+    });
 
-    if(!checkFollow){
-      return res.status(200).json("you are not follow ths company");
-
+    if (!checkFollow) {
+      return res.status(200).json("you don't follow the given company");
     }
 
     const unFollow = await followers.destroy({
-    where: {sender_id: senderid, receiver_id: receiverid}
-  })
-    return res.status(200).json("deleted successfully");
-
+      where: { sender_id: senderid, receiver_id: receiverid },
+    });
+    return res.status(200).json("unfollowed successfully");
   } catch (error) {
     console.error("Error retrieving received follow requests:", error);
     return res.status(500).json({
-    message: "An error occurred while retrieving received follow requests.",
-  });
-}
+      message: "An error occurred while retrieving received follow requests.",
+    });
+  }
 }
 
 //------------------------Followers routes aljamal
@@ -939,7 +940,10 @@ async function applyJob(req, res, next) {
     const job = await jobs.get(jobid);
     const companyid = job.dataValues.user_id;
     const company = await users.get(companyid);
-    console.log("----------------------------------------------------------->",company)
+    console.log(
+      "----------------------------------------------------------->",
+      company.username
+    );
 
     if (req.user.role !== "company") {
       // check the id of the applyer for the job
@@ -968,6 +972,7 @@ async function applyJob(req, res, next) {
       await applyjob.create({
         job_id: jobid,
         applyer_id: applyerid,
+        company_name: company.username,
       });
 
       return res.status(200).json("You applied to this job successfully.");
@@ -1120,6 +1125,7 @@ router.get("/applicationStatus/", bearerAuth, async (req, res) => {
         "status",
         "interviewDate", // Include interview date
         "interviewLocation",
+        "company_name",
       ], // Include interview location], // Include the application ID and status
     });
 
@@ -1133,6 +1139,7 @@ router.get("/applicationStatus/", bearerAuth, async (req, res) => {
     const transformedApplications = applications.map((application) => {
       return {
         applicationId: application.id,
+        company: application.company_name,
         jobTitle: application.job.job_title,
         status: application.status,
         interviewDate: application.interviewDate,
@@ -1217,7 +1224,7 @@ async function userRecords(req, res) {
 
 async function handleGetAll(req, res) {
   let allRecords = await req.model.get();
-  
+
   res.status(200).json(allRecords);
 }
 
@@ -1230,10 +1237,10 @@ async function handleGetOne(req, res) {
 async function handleCreate(req, res) {
   let obj = req.body;
   let userId = req.user.id;
-  let username= req.user.username;
+  let username = req.user.username;
   obj.user_id = userId;
-  obj.username=username;
-  console.log(obj)
+  obj.username = username;
+  console.log(obj);
   let newRecord = await req.model.create(obj);
   res.status(201).json(newRecord);
 }
@@ -1257,29 +1264,27 @@ async function handleCreate(req, res) {
 async function handleCreateLikes(req, res) {
   let obj = req.body;
   let userId = req.user.id;
-  let username= req.user.username;
+  let username = req.user.username;
   obj.user_id = userId;
-  obj.username=username;
-  console.log(userId)
+  obj.username = username;
+  console.log(userId);
   obj["user_id"] = userId;
 
   // Check if the user has already liked the post
-  const existingLike = await likes.checkPostId(obj["post_id"],obj["user_id"] );
+  const existingLike = await likes.checkPostId(obj["post_id"], obj["user_id"]);
   if (existingLike) {
     res.status(400).json("You've already liked this post.");
   } else {
     // Create a new like record
     // try {
-      const newRecord = await likes.create(obj);
-      res.status(201).json(newRecord);
+    const newRecord = await likes.create(obj);
+    res.status(201).json(newRecord);
     // } catch (error) {
-      // console.error(error);
-      // res.status(500).json("An error occurred while creating the like.");
+    // console.error(error);
+    // res.status(500).json("An error occurred while creating the like.");
     // }
   }
 }
-
-
 
 async function handleUpdate(req, res) {
   const id = req.params.id;

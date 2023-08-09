@@ -6,7 +6,7 @@ const readline = require("readline");
 
 const socket = io("http://localhost:3000");
 const token =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFobWVkIiwiaWQiOjgsImlhdCI6MTY5MTMwODY0NH0.QE7wv1pcxgtT7S2AUEj8FS1fO1prQ_2WDQ7PaeA6n0k";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFtYXIiLCJpZCI6NSwiaWF0IjoxNjkxNTc5NDc5fQ._Vtr5_5HWid_tgURcb2uB0p5eCsRBQNTSrO0a-RWha0";
 socket.on("connect", () => {
   console.log("Connected to Socket.IO server");
   socket.emit("sendToken", { token });
@@ -59,7 +59,7 @@ function sendMessage(receiverId) {
   rl.on("line", async (message) => {
     try {
       const response = await axios.post(
-        `http://localhost:3000/career/sendMessage/${receiverId}`,
+        `http://localhost:3000/home/sendMessage/${receiverId}`,
         {
           message: message,
         },
@@ -90,7 +90,7 @@ function sendMessage(receiverId) {
   });
 }
 
-const receiverId = 1; // Replace with the receiver's user ID
+const receiverId = 4; // Replace with the receiver's user ID
 sendMessage(receiverId);
 
 socket.on("newMessage", (data) => {

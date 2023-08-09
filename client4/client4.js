@@ -22,7 +22,7 @@ socket.on("connect", () => {
   socket.emit("joinCompanyRoom", {
     userId,
     companyId: companyId,
-    roomType: "general",
+    roomType: "announcements",
   });
 
   // Function to send messages
@@ -45,7 +45,7 @@ socket.on("connect", () => {
       socket.emit("sendMessage", {
         userId,
         companyId,
-        roomType: "general",
+        roomType: "announcements",
         message: message,
       });
 

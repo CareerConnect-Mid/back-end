@@ -6,6 +6,7 @@ const joinRequests = (sequelize, DataTypes) =>
       type: DataTypes.INTEGER,
       allowNull: false,
     },
+    username: { type: DataTypes.STRING },
     receiver_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -15,6 +16,7 @@ const joinRequests = (sequelize, DataTypes) =>
       required: true,
       defaultValue: "pending",
     },
+    employee_code: { type: DataTypes.STRING },
     message: { type: DataTypes.STRING },
   });
 

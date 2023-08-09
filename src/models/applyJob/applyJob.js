@@ -4,6 +4,7 @@ const applyJobModel = (sequelize, DataTypes) =>
   sequelize.define("applyJob ", {
     job_id: { type: DataTypes.INTEGER },
     applyer_id: { type: DataTypes.INTEGER },
+    company_name: { type: DataTypes.STRING },
     cv_link: { type: DataTypes.STRING },
     status: {
       type: DataTypes.ENUM("pending", "rejected", "interview"),

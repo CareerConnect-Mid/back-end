@@ -6,7 +6,7 @@ const friendRequests = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
-    username:{type:DataTypes.STRING},
+    username: { type: DataTypes.STRING },
     receiver_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -19,21 +19,6 @@ const friendRequests = (sequelize, DataTypes) => {
     message: { type: DataTypes.STRING },
   });
 
-  // model.afterUpdate(async (requestToUpdate) => {
-  //   if (requestToUpdate.status === "accepted") {
-  //     // Create a friendship record in the Friendship table
-  //     const friends = sequelize.models.friends;
-  //     await friends.create({
-  //       personId: requestToUpdate.sender_id,
-  //       friendId: requestToUpdate.receiver_id,
-  //     });
-
-  //     await friends.create({
-  //       personId: requestToUpdate.receiver_id,
-  //       friendId: requestToUpdate.sender_id,
-  //     });
-  //   }
-  // });
   return model;
 };
 

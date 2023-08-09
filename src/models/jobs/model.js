@@ -6,12 +6,12 @@ const JobsModel = (sequelize, DataTypes) =>
       type: DataTypes.INTEGER,
       allowNull: false,
     },
-    username:{type:DataTypes.STRING},
+    company_name: { type: DataTypes.STRING },
     job_title: {
       type: DataTypes.STRING(255),
       set(value) {
         this.setDataValue("job_title", value.toLowerCase());
-      }
+      },
     },
     job_city: {
       type: DataTypes.STRING(255),
@@ -19,7 +19,7 @@ const JobsModel = (sequelize, DataTypes) =>
     job_field: {
       type: DataTypes.STRING(255),
     },
-   content: {
+    content: {
       type: DataTypes.STRING(255),
     },
   });

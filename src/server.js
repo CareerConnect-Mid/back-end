@@ -197,10 +197,10 @@ io.on("connection", (socket) => {
   async function isCompanyUser(userId, companyId) {
     try {
       // Find the user by the userId
-      const user = await user.findByPk(userId);
+      const User = await user.findByPk(userId);
 
       // If the user is not found or their role is not "company", they are not a company user
-      if (!user || user.role !== "company") {
+      if (!User || User.role !== "company") {
         return false;
       }
 

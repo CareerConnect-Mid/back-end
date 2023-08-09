@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 const socket = io("http://localhost:3000");
 const SECRET = "secretstring";
 const token =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6Im1vaGFubmFkIiwiaWQiOjEsImlhdCI6MTY5MTMwODY2N30.M3bVdLQxXG2ekGBuSbzidib_qSSdzFCxh9TqbzxplHE";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFtZXIiLCJpZCI6NCwiaWF0IjoxNjkxNTc5NDQwfQ.YrXIE6jy2Zwg_hzidUD9QCclzzO93CT6dTbGDTgOTAY";
 socket.on("connect", () => {
   console.log("Connected to Socket.IO server");
   socket.emit("sendToken", { token });
@@ -57,7 +57,7 @@ function sendMessage(receiverId) {
   rl.question("Enter your message:\n", async (message) => {
     try {
       const response = await axios.post(
-        `http://localhost:3000/career/sendMessage/${receiverId}`,
+        `http://localhost:3000/home/sendMessage/${receiverId}`,
         {
           message: message,
         },
@@ -88,7 +88,7 @@ function sendMessage(receiverId) {
   });
 }
 
-const receiverId = 8; // Replace with the receiver's user ID
+const receiverId = 5; // Replace with the receiver's user ID
 sendMessage(receiverId);
 socket.on("newMessage", (data) => {
   console.log("there is a NEW message:\n", data);

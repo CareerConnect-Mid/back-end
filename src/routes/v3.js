@@ -35,7 +35,7 @@ router2.post("/jobs", bearerAuth, permissions(), handleCreate);
 router2.post("/jobcomments", bearerAuth, handleCommentsCreate);
 router2.get("/jobs/:id/jobcomments", bearerAuth, jobComments);
 router2.get("/jobs/:id/likes", bearerAuth, postLikes);
-router2.get("/job/:id/applyer", bearerAuth, jobapplyer);
+router2.get("/job/:id/appliers", bearerAuth, jobapplyer);
 router2.post("/likes", bearerAuth, handleCreateLikes);
 router2.get("/likes", bearerAuth, handleGetAll);
 router2.put("/:model/:id", bearerAuth, checkId, permissions(), handleUpdate);

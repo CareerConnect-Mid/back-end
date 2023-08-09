@@ -10,9 +10,9 @@ const applyJobModel = (sequelize, DataTypes) =>
       type: DataTypes.ENUM("pending", "rejected", "interview"),
       defaultValue: "pending",
     },
-    interviewDate: { type: DataTypes.DATE },
-    interviewLocation: { type: DataTypes.STRING },
-    rejectionReason: { type: DataTypes.STRING },
+    interviewDate: { type: DataTypes.STRING ,defaultValue: "not specified" },
+    interviewLocation: { type: DataTypes.STRING ,defaultValue: "not specified"},
+    rejectionReason: { type: DataTypes.STRING ,defaultValue: "not specified"},
   });
 
 module.exports = applyJobModel;
